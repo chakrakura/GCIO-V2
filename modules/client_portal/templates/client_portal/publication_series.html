@@ -1,0 +1,65 @@
+{% extends "client_portal/base_client.html" %}
+
+{% block title %}{{ publication_type.display_name }}{% endblock %}
+
+{% block breadcrumb %}Publications &middot; {{ publication_type.name }}{% endblock %}
+
+{% block content %}
+  <div class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <div>
+      <div class="text-[10.5px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.18em] mb-2">Publication series</div>
+      <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">{{ publication_type.display_name }}</h1>
+      {% if publication_type.description %}<p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-2xl">{{ publication_type.description }}</p>{% endif %}
+    </div>
+    <div class="text-right shrink-0">
+      {% if publication_type.cadence_label %}
+      <div class="flex items-center justify-end gap-1.5 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
+        <span class="w-1.5 h-1.5 rounded-full {{ dot_color }}"></span>
+        {{ publication_type.cadence_label|upper }}
+      </div>
+      {% endif %}
+      <div class="text-[13px] text-gray-400 dark:text-gray-500 mb-2">{{ publication_type.name }} &middot; {{ total_count }} issue{{ total_count|pluralize }}</div>
+      {% if contributors %}
+      <div class="flex items-center justify-end gap-1.5">
+        <div class="flex -space-x-1.5">
+          {% for c in contributors|slice:":4" %}
+          <div class="w-6 h-6 rounded-full bg-blue-900 text-white flex items-center justify-center text-[10px] font-bold border-2 border-gray-50 dark:border-gray-900">{{ c.first_name|slice:":1"|default:c.username|slice:":1"|upper }}</div>
+          {% endfor %}
+        </div>
+        <span class="text-xs text-gray-400 dark:text-gray-500">{% for c in contributors %}{{ c.last_name|default:c.username }}{% if not forloop.last %} &middot; {% endif %}{% endfor %}</span>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="get" id="research-filters-form" class="flex flex-col md:flex-row gap-6 items-start">
+    {% include 'client_portal/partials/series_filters_aside.html' %}
+
+    <div class="flex-1 min-w-0 w-full">
+      <div class="flex flex-wrap gap-2 mb-4">
+        {% for value, label in date_range_options %}
+        <a href="?{% if range_link_base %}{{ range_link_base }}&{% endif %}date_range={{ value }}" class="px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold {% if selected_date_range == value %}bg-blue-900 text-white{% else %}bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">{{ label }}</a>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="date_range" value="{{ selected_date_range }}">
+
+      {% include 'client_portal/partials/research_toolbar.html' with search_placeholder='Search within this series...' %}
+
+      <div id="research-results" class="grid grid-cols-1 gap-4">
+        {% for report in reports %}
+          {% include 'client_portal/partials/research_card.html' with report=report %}
+        {% empty %}
+        <div class="md:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center text-gray-400 dark:text-gray-500">
+          No issues match this filter.
+        </div>
+        {% endfor %}
+      </div>
+
+      {% include 'client_portal/partials/research_load_more.html' %}
+    </div>
+  </form>
+{% endblock %}
+
+{% block extra_scripts %}
+  {% include 'client_portal/partials/research_scripts.html' %}
+{% endblock %}

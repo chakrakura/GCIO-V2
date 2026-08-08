@@ -1,0 +1,12 @@
+asgiref==3.11.1
+Django==4.2.30
+mysqlclient==2.2.7
+python-dotenv==1.2.1
+sqlparse==0.5.5
+typing_extensions==4.16.0
+google-generativeai==0.8.6
+anthropic==0.120.0
+openai==2.48.0
+pillow==11.3.0
+pypdf==6.15.0
+requests==2.32.5

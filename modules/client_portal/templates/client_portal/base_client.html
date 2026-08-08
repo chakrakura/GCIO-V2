@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Research Portal{% endblock %} | The Global CIO Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          serif: ['"Source Serif 4"', 'Charter', 'Georgia', 'serif'],
+        },
+      },
+    },
+  }
+</script>
+<script>
+  if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+</script>
+<style>
+  #portal-sidebar { transform: translateX(-100%); }
+  #portal-sidebar-backdrop { display: none; }
+  html.mobile-sidebar-open #portal-sidebar { transform: translateX(0); }
+  html.mobile-sidebar-open #portal-sidebar-backdrop { display: block; }
+  @media (min-width: 768px) {
+    #portal-sidebar { transform: none !important; }
+    #portal-sidebar-backdrop { display: none !important; }
+  }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans text-gray-700 dark:text-gray-300">
+
+<form id="csrf-form" class="hidden">{% csrf_token %}</form>
+
+<div class="flex min-h-screen">
+  <div id="portal-sidebar-backdrop" class="fixed inset-0 bg-black/40 z-30 md:hidden"></div>
+  <aside id="portal-sidebar" class="fixed inset-y-0 left-0 z-40 w-64 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col p-4 overflow-y-auto transition-transform">
+    <div class="flex items-center gap-2.5 px-2 pb-6">
+      <div class="w-9 h-9 rounded-[10px] bg-blue-900 text-white flex items-center justify-center font-serif font-bold text-lg shrink-0">G</div>
+      <div class="min-w-0">
+        <div class="font-serif font-bold text-sm text-blue-900 dark:text-blue-300 leading-tight truncate">The Global CIO Office</div>
+        <div class="text-[10px] tracking-wider font-bold text-blue-600 dark:text-blue-400">RESEARCH PORTAL</div>
+      </div>
+    </div>
+
+    <nav class="flex-1 overflow-y-auto">
+      <a href="{% url 'client_home' %}" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'home' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+        Home
+      </a>
+
+      <div class="mt-1">
+        <div class="flex items-center rounded-lg {% if active_nav == 'research' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+          <a href="{% url 'client_browse' %}" class="flex-1 flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium">
+            <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>
+            Research
+          </a>
+          <button type="button" class="sidebar-accordion-toggle px-2.5 py-2.5 text-gray-400 dark:text-gray-500 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer shrink-0" data-target="sidebar-research-items">
+            <svg class="sidebar-accordion-chevron w-4 h-4 shrink-0 transition-transform {% if active_nav == 'research' %}rotate-180{% endif %}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+        </div>
+        <div id="sidebar-research-items" class="{% if active_nav == 'research' %}flex{% else %}hidden{% endif %} pl-[42px] flex-col">
+          {% for ac in asset_classes %}
+            <a href="{% url 'client_browse' %}?asset_class={{ ac.id }}" class="px-3 py-2 text-[13.5px] text-gray-500 dark:text-gray-400 hover:text-blue-800 dark:hover:text-blue-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">{{ ac.name }}</a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="mt-1">
+        <div class="flex items-center rounded-lg {% if active_nav == 'publications' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+          <a href="{% url 'client_publications' %}" class="flex-1 flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium">
+            <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2Z"/><path d="M22 4h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7Z"/></svg>
+            Publications
+          </a>
+          <button type="button" class="sidebar-accordion-toggle px-2.5 py-2.5 text-gray-400 dark:text-gray-500 hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer shrink-0" data-target="sidebar-publications-items">
+            <svg class="sidebar-accordion-chevron w-4 h-4 shrink-0 transition-transform {% if active_nav == 'publications' %}rotate-180{% endif %}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+        </div>
+        <div id="sidebar-publications-items" class="{% if active_nav == 'publications' %}flex{% else %}hidden{% endif %} pl-[42px] flex-col">
+          {% for pt in publication_types %}
+            <a href="{% url 'client_publication_series' pt.slug %}" class="px-3 py-2 text-[13.5px] text-gray-500 dark:text-gray-400 hover:text-blue-800 dark:hover:text-blue-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">{{ pt.name }}</a>
+          {% endfor %}
+        </div>
+      </div>
+
+      <a href="{% url 'client_exclusive_reports' %}" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mt-1 mb-0.5 {% if active_nav == 'exclusive' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Exclusive Reports
+      </a>
+
+      <a href="{% url 'client_saved_reports' %}" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'saved' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        Saved Reports
+      </a>
+
+      <a href="{% url 'client_archive' %}" class="nav-item flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'archive' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+        <span class="flex items-center gap-2.5">
+          <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+          Archive
+        </span>
+        <span class="text-xs text-gray-400 dark:text-gray-500">{{ archive_count|default:0 }}</span>
+      </a>
+    </nav>
+
+    <div class="border-t border-gray-100 dark:border-gray-700 pt-2.5 mt-2.5">
+      <a href="{% url 'profile' %}" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'profile' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Profile
+      </a>
+      <a href="{% url 'client_help_support' %}" class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'help' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+        Help &amp; Support
+      </a>
+    </div>
+  </aside>
+
+  <div class="flex-1 flex flex-col min-w-0 md:ml-64">
+    <div class="flex items-center gap-4 px-4 md:px-8 py-[18px] border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <button type="button" id="portal-mobile-menu-toggle" class="md:hidden w-9 h-9 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400" aria-label="Open menu">
+        <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <div class="text-[13px] text-gray-500 dark:text-gray-400 truncate hidden md:block">{% block breadcrumb %}{% endblock %}</div>
+      <div class="flex items-center gap-2 sm:gap-3 shrink-0 ml-auto">
+        <button type="button" id="portal-theme-toggle" class="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700" aria-label="Toggle dark mode">
+          <svg id="portal-theme-icon-sun" class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg id="portal-theme-icon-moon" class="w-4 h-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+        </button>
+        <div class="relative" id="portal-user-menu">
+          <button type="button" id="portal-user-menu-toggle" class="flex items-center gap-1.5">
+            {% if request.user.profile.photo %}
+              <img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.get_full_name|default:request.user.username }}" class="w-9 h-9 rounded-full object-cover">
+            {% else %}
+              <div class="w-9 h-9 rounded-full bg-blue-900 text-white flex items-center justify-center text-[12.5px] font-bold">{{ request.user.first_name|slice:":1"|default:request.user.username|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</div>
+            {% endif %}
+            <svg class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 hidden sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div id="portal-user-menu-dropdown" class="hidden absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1.5 z-50">
+            <div class="px-3.5 py-2 border-b border-gray-100 dark:border-gray-700">
+              <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+              <div class="text-[12px] text-gray-500 dark:text-gray-400 truncate">{{ request.user.email }}</div>
+            </div>
+            <a href="{% url 'profile' %}" class="flex items-center gap-2.5 px-3.5 py-2.5 text-[13.5px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Edit profile
+            </a>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="flex items-center gap-2.5 px-3.5 py-2.5 text-[13.5px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-left bg-transparent border-none cursor-pointer font-sans">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                Log out
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-4 md:p-8 flex-1 overflow-x-hidden">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="p-3 rounded-lg text-[13.5px] mb-5 {% if message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800{% else %}bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800{% endif %}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+      {% block content %}{% endblock %}
+
+      <div class="border-t border-gray-200 dark:border-gray-700 mt-10 pt-6">
+        <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-[13px] text-gray-500 dark:text-gray-400 mb-5">
+          <span class="font-bold text-gray-700 dark:text-gray-300">Research disclaimer.</span>
+          Content is provided for information and research purposes only and does not constitute personalised investment advice. Past performance does not guarantee future results. Distributed only to authenticated GCIO clients &mdash; not for onward distribution.
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-6">
+          <div class="flex flex-wrap gap-x-5 gap-y-2 text-[13px] font-semibold text-blue-700 dark:text-blue-400">
+            <a href="https://www.thegcio.com/privacy-policy" target="_blank" rel="noopener" class="hover:underline">Privacy Policy</a>
+            <a href="https://www.thegcio.com/services" target="_blank" rel="noopener" class="hover:underline">Terms of Use</a>
+            <a href="#" onclick="return false;" class="hover:underline">Research Disclaimer</a>
+            <a href="#" onclick="return false;" class="hover:underline">Cookie Policy</a>
+            <a href="#" onclick="return false;" class="hover:underline">Accessibility</a>
+            <a href="https://www.thegcio.com/contact" target="_blank" rel="noopener" class="hover:underline">Contact</a>
+          </div>
+          <div class="text-[13px] text-gray-400 dark:text-gray-500">&copy; {% now "Y" %} The Global CIO Office. All rights reserved.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('portal-theme-toggle').addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.theme = isDark ? 'dark' : 'light';
+  });
+
+  function togglePortalMobileSidebar() {
+    document.documentElement.classList.toggle('mobile-sidebar-open');
+  }
+  document.getElementById('portal-mobile-menu-toggle').addEventListener('click', togglePortalMobileSidebar);
+  document.getElementById('portal-sidebar-backdrop').addEventListener('click', togglePortalMobileSidebar);
+
+  document.querySelectorAll('.sidebar-accordion-toggle').forEach((btn) => {
+    const target = document.getElementById(btn.dataset.target);
+    const chevron = btn.querySelector('.sidebar-accordion-chevron');
+    btn.addEventListener('click', () => {
+      const opening = target.classList.contains('hidden');
+      target.classList.toggle('hidden', !opening);
+      target.classList.toggle('flex', opening);
+      chevron.classList.toggle('rotate-180', opening);
+    });
+  });
+
+  const portalUserMenu = document.getElementById('portal-user-menu');
+  const portalUserMenuToggle = document.getElementById('portal-user-menu-toggle');
+  const portalUserMenuDropdown = document.getElementById('portal-user-menu-dropdown');
+  portalUserMenuToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    portalUserMenuDropdown.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (!portalUserMenu.contains(e.target)) portalUserMenuDropdown.classList.add('hidden');
+  });
+
+  // Save/unsave a report — delegated on document so it works for content
+  // swapped in later via AJAX (e.g. the Latest Research filter tabs).
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.save-toggle-btn');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const reportId = btn.dataset.reportId;
+    const csrfToken = document.querySelector('#csrf-form [name=csrfmiddlewaretoken]').value;
+    let data;
+    try {
+      const resp = await fetch(`/portal/${reportId}/save/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+      });
+      if (!resp.ok) return;
+      data = await resp.json();
+    } catch (err) {
+      return;
+    }
+
+    const grid = document.querySelector('[data-remove-on-unsave]');
+    if (grid && grid.contains(btn) && !data.saved) {
+      const card = btn.closest('a');
+      if (card) card.remove();
+      if (!grid.querySelector('a')) {
+        grid.innerHTML = `
+          <div class="md:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center text-gray-400 dark:text-gray-500">
+            <svg class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            You haven't saved any reports yet. Click the bookmark icon on any report to save it here.
+          </div>`;
+      }
+      return;
+    }
+
+    const icon = btn.querySelector('.bookmark-icon');
+    btn.classList.toggle('is-saved', data.saved);
+    btn.classList.toggle('text-blue-600', data.saved);
+    icon.setAttribute('fill', data.saved ? 'currentColor' : 'none');
+    btn.setAttribute('title', data.saved ? 'Saved' : 'Save');
+  });
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

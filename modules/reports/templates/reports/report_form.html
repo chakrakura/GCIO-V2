@@ -1,0 +1,476 @@
+{% extends "console/base.html" %}
+
+{% block title %}{% if is_edit %}Edit report{% else %}Create report{% endif %}{% endblock %}
+
+{% block breadcrumb %}Reports &middot; {% if is_edit %}edit{% else %}new{% endif %}{% endblock %}
+
+{% block extra_style %}
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+<style>
+  .ql-editor { min-height: 260px; font-family: 'Inter', system-ui, sans-serif; font-size: 14px; }
+  .ql-toolbar.ql-snow { border-color: #e5e7eb; border-top-left-radius: 9px; border-top-right-radius: 9px; }
+  .ql-container.ql-snow { border-color: #e5e7eb; border-bottom-left-radius: 9px; border-bottom-right-radius: 9px; }
+  .pill-option input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .content-tab input { position: absolute; opacity: 0; width: 0; height: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-2 text-sm">
+      <a href="{% url 'report_list' %}" class="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+        Reports
+      </a>
+      <span class="text-gray-300 dark:text-gray-600">/</span>
+      <span class="font-semibold text-blue-900 dark:text-blue-300">{% if is_edit %}Edit report{% else %}Create report{% endif %}</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <button type="button" id="preview-btn" class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+        Preview
+      </button>
+      <button type="button" class="btn-save-draft inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+        Save as draft
+      </button>
+      <button type="button" class="btn-publish inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+        Publish
+      </button>
+    </div>
+  </div>
+
+  <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">{% if is_edit %}EDIT REPORT{% else %}NEW REPORT{% endif %}</div>
+  <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">{% if is_edit %}Edit report{% else %}Create a report{% endif %}</h1>
+  <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-2xl mb-5">Create a text article, or upload a PDF or presentation. Add metadata, set access, then save as draft or publish.</p>
+  <div class="border-b border-gray-200 dark:border-gray-700 mb-6"></div>
+
+  <form method="post" enctype="multipart/form-data" id="report-form">
+    {% csrf_token %}
+
+    <div class="flex flex-wrap gap-2.5 mb-6">
+      <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+        <input type="radio" name="content_type" value="text" {% if form.content_type.value|default:'text' == 'text' %}checked{% endif %}>
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+        Text article
+      </label>
+      <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+        <input type="radio" name="content_type" value="pdf" {% if form.content_type.value == 'pdf' %}checked{% endif %}>
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        Upload PDF
+      </label>
+      <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
+        <input type="radio" name="content_type" value="presentation" {% if form.content_type.value == 'presentation' %}checked{% endif %}>
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>
+        Upload presentation
+      </label>
+    </div>
+
+    {% if form.non_field_errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mb-4">{{ form.non_field_errors }}</div>{% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2 space-y-6">
+
+        <div id="ai-card" class="bg-blue-50/60 border border-blue-100 dark:border-blue-800 rounded-xl p-6">
+          <div class="flex items-start gap-3 mb-4">
+            <div class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
+            </div>
+            <div>
+              <div class="font-bold text-blue-900 dark:text-blue-300">Generate with AI</div>
+              <div class="text-[13px] text-gray-500 dark:text-gray-400">Draft the article from a topic, then edit before publishing.</div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 mb-4">
+            {% for p in providers %}
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-bold whitespace-nowrap {% if p.connected %}bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400{% else %}bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400{% endif %}">
+                <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                {{ p.label }}{% if not p.usable %} (not wired up for generation yet){% endif %}
+              </span>
+            {% endfor %}
+          </div>
+
+          {% with gemini_connected=providers.0.connected %}
+          {% if not gemini_connected %}
+            <div class="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-[13px] px-3.5 py-2.5 rounded-lg mb-4">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+              No model connected yet. Add <code class="font-mono">GEMINI_API_KEY</code> to your .env file — generation runs in demo mode until then.
+            </div>
+          {% endif %}
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">MODEL</label>
+              <select disabled class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                <option>Gemini {% if gemini_connected %}— Connected{% else %}— Not connected{% endif %}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">REPORT SIZE</label>
+              <select id="report-size" class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+                <option value="2|400">Short note &middot; 2 pages</option>
+                <option value="5|900" selected>Standard insight &middot; 5 pages</option>
+                <option value="10|2000">Deep dive &middot; 10 pages</option>
+              </select>
+            </div>
+          </div>
+
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">TOPIC OR BRIEF</label>
+          <textarea id="ai-prompt" rows="3" placeholder="e.g. The impact of BOJ policy normalisation on JGB yields and the yen" class="w-full px-3.5 py-3 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 mb-3"></textarea>
+          <div id="ai-error" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-[13px] px-3 py-2.5 rounded-lg mb-3"></div>
+
+          <div class="flex items-center gap-3">
+            <button type="button" id="ai-generate-btn" class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
+              <span id="ai-generate-label">Generate draft</span>
+            </button>
+            <span id="ai-size-hint" class="text-[13px] text-gray-500 dark:text-gray-400">~900 words &middot; 5 pages &middot; via Gemini</span>
+          </div>
+          {% endwith %}
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.title.id_for_label }}">TITLE</label>
+          {{ form.title }}
+          {% if form.title.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ form.title.errors }}</div>{% endif %}
+
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5 mt-5" for="{{ form.description.id_for_label }}">SUMMARY / DEK</label>
+          {{ form.description }}
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Shown on cards and at the top of the reading view.</div>
+
+          <div id="article-body-section" class="mt-5">
+            <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">ARTICLE BODY</label>
+            <div id="editor"></div>
+            {{ form.body }}
+          </div>
+
+          <div id="file-upload-section" class="mt-5 hidden">
+            <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">FILE</label>
+            {{ form.file_upload }}
+            {% if report.file_upload %}<div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Current file: <a class="text-blue-700 dark:text-blue-400 hover:underline" href="{{ report.file_upload.url }}">{{ report.file_upload.name }}</a></div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+          <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-4">PUBLISHING</div>
+
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.status.id_for_label }}">STATUS</label>
+          {{ form.status }}
+
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5 mt-4" for="{{ form.access_level.id_for_label }}">ACCESS LEVEL</label>
+          {{ form.access_level }}
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 mb-3">Who can see this report.</div>
+
+          <div id="org-pills" class="mb-1 {% if form.access_level.value|default:'all' == 'all' %}hidden{% endif %}">
+            <div class="relative" id="report-org-combobox">
+              <div id="report-org-pills" class="flex flex-wrap gap-1.5 mb-2 empty:mb-0"></div>
+              <input type="text" id="report-org-search" autocomplete="off" placeholder="Search organisations..."
+                class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+              <div id="report-org-options" class="hidden absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"></div>
+              <select name="visible_organizations" id="id_visible_organizations" multiple class="hidden">
+                {% for org in org_options %}
+                  <option value="{{ org.id }}" {% if org.id in selected_orgs %}selected{% endif %}>{{ org.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5 mt-4" for="{{ form.publication_type.id_for_label }}">PUBLICATION TYPE</label>
+          {{ form.publication_type }}
+
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5 mt-4" for="{{ form.page_count.id_for_label }}">PAGES</label>
+          {{ form.page_count }}
+
+          <label class="flex items-center gap-2.5 mt-4 cursor-pointer" for="{{ form.is_featured.id_for_label }}">
+            {{ form.is_featured }}
+            <span class="text-sm text-gray-700 dark:text-gray-300">Feature on client home page</span>
+          </label>
+
+          <div class="border-t border-gray-100 dark:border-gray-700 mt-5 pt-5 flex flex-col gap-2.5">
+            <button type="button" class="btn-publish w-full inline-flex items-center justify-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+              Publish
+            </button>
+            <button type="button" class="btn-save-draft w-full inline-flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+              Save as draft
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+          <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-4">AUTHORS</div>
+          <div class="flex flex-wrap gap-2">
+            {% for author in author_options %}
+            <label class="pill-option inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[12.5px] font-medium border cursor-pointer has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/40 has-[:checked]:text-blue-800 dark:has-[:checked]:text-blue-300 has-[:checked]:border-blue-200 dark:has-[:checked]:border-blue-700 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800">
+              <input type="radio" name="author" value="{{ author.id }}" {% if author.id == selected_author_id %}checked{% endif %}>
+              <svg class="w-3 h-3 hidden [.pill-option:has(:checked)_&]:inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
+              {{ author.get_full_name|default:author.username }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+          <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-4">CLASSIFICATION</div>
+
+          <div class="text-[10.5px] tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-2">ASSET CLASS</div>
+          <div class="flex flex-wrap gap-2 mb-4">
+            {% for opt in asset_class_options %}
+            <label class="pill-option inline-flex items-center px-3 py-1.5 rounded-full text-[12.5px] font-medium border cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800">
+              <input type="checkbox" name="asset_classes" value="{{ opt.id }}" {% if opt.id in selected_asset_classes %}checked{% endif %}>
+              {{ opt.name }}
+            </label>
+            {% endfor %}
+          </div>
+
+          <div class="text-[10.5px] tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-2">REGION</div>
+          <div class="flex flex-wrap gap-2 mb-4">
+            {% for opt in country_region_options %}
+            <label class="pill-option inline-flex items-center px-3 py-1.5 rounded-full text-[12.5px] font-medium border cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800">
+              <input type="checkbox" name="countries_regions" value="{{ opt.id }}" {% if opt.id in selected_countries_regions %}checked{% endif %}>
+              {{ opt.name }}
+            </label>
+            {% endfor %}
+          </div>
+
+          <div class="text-[10.5px] tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-2">REPORT TAGS</div>
+          <div class="flex flex-wrap gap-2">
+            {% for opt in tag_options %}
+            <label class="pill-option inline-flex items-center px-3 py-1.5 rounded-full text-[12.5px] font-medium border cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800">
+              <input type="checkbox" name="tags" value="{{ opt.id }}" {% if opt.id in selected_tags %}checked{% endif %}>
+              {{ opt.name }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- Preview modal -->
+  <div id="preview-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-8">
+      <button type="button" id="preview-close" class="float-right text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">PREVIEW</div>
+      <h2 id="preview-title" class="font-serif font-bold text-2xl text-blue-900 dark:text-blue-300 mb-4"></h2>
+      <div id="preview-body" class="prose text-sm text-gray-700 dark:text-gray-300"></div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script>
+  const bodyInput = document.getElementById('body-input');
+  const quill = new Quill('#editor', {
+    theme: 'snow',
+    modules: {
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ color: [] }, { background: [] }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        ['blockquote', 'link'],
+        ['clean'],
+      ],
+    },
+  });
+  if (bodyInput.value) {
+    quill.root.innerHTML = bodyInput.value;
+  }
+
+  const form = document.getElementById('report-form');
+  const statusInput = document.getElementById('{{ form.status.id_for_label }}');
+  const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+
+  form.addEventListener('submit', () => {
+    bodyInput.value = quill.root.innerHTML;
+  });
+
+  document.querySelectorAll('.btn-publish').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      statusInput.value = 'published';
+      bodyInput.value = quill.root.innerHTML;
+      form.requestSubmit();
+    });
+  });
+  document.querySelectorAll('.btn-save-draft').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      statusInput.value = 'draft';
+      bodyInput.value = quill.root.innerHTML;
+      form.requestSubmit();
+    });
+  });
+
+  // Content type tabs
+  const articleSection = document.getElementById('article-body-section');
+  const fileSection = document.getElementById('file-upload-section');
+  const aiCard = document.getElementById('ai-card');
+  document.querySelectorAll('input[name="content_type"]').forEach((radio) => {
+    radio.addEventListener('change', () => {
+      const isText = radio.value === 'text';
+      if (radio.checked) {
+        articleSection.classList.toggle('hidden', !isText);
+        fileSection.classList.toggle('hidden', isText);
+        aiCard.classList.toggle('hidden', !isText);
+      }
+    });
+  });
+
+  // Access level toggles organisation pills
+  const accessSelect = document.getElementById('{{ form.access_level.id_for_label }}');
+  const orgPills = document.getElementById('org-pills');
+  accessSelect.addEventListener('change', () => {
+    orgPills.classList.toggle('hidden', accessSelect.value !== 'selected');
+  });
+
+  // Searchable multi-select combobox for visible organisations
+  function initSearchableMultiSelect(wrapperId, realSelectId, searchInputId, panelId, pillsId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    const realSelect = document.getElementById(realSelectId);
+    const searchInput = document.getElementById(searchInputId);
+    const panel = document.getElementById(panelId);
+    const pillsBox = document.getElementById(pillsId);
+    const options = Array.from(realSelect.options);
+    const selected = new Set(options.filter((o) => o.selected).map((o) => o.value));
+
+    function syncRealSelect() {
+      options.forEach((o) => { o.selected = selected.has(o.value); });
+    }
+
+    function renderPills() {
+      pillsBox.innerHTML = '';
+      options.filter((o) => selected.has(o.value)).forEach((o) => {
+        const pill = document.createElement('span');
+        pill.className = 'inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-medium text-[12.5px] pl-2.5 pr-1.5 py-1 rounded-full';
+        pill.textContent = o.text;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'w-4 h-4 flex items-center justify-center rounded-full hover:bg-blue-200 dark:hover:bg-blue-800';
+        remove.innerHTML = '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+        remove.addEventListener('click', () => {
+          selected.delete(o.value);
+          syncRealSelect();
+          renderPills();
+        });
+        pill.appendChild(remove);
+        pillsBox.appendChild(pill);
+      });
+    }
+
+    function renderOptions(filter) {
+      const q = filter.trim().toLowerCase();
+      const matches = options.filter((o) => !selected.has(o.value) && o.text.toLowerCase().includes(q));
+      panel.innerHTML = '';
+      if (!matches.length) {
+        const empty = document.createElement('div');
+        empty.className = 'px-3.5 py-2 text-sm text-gray-400 dark:text-gray-500';
+        empty.textContent = 'No matches';
+        panel.appendChild(empty);
+      } else {
+        matches.forEach((o) => {
+          const item = document.createElement('div');
+          item.className = 'px-3.5 py-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30';
+          item.textContent = o.text;
+          item.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            selected.add(o.value);
+            syncRealSelect();
+            renderPills();
+            searchInput.value = '';
+            renderOptions('');
+          });
+          panel.appendChild(item);
+        });
+      }
+      panel.classList.remove('hidden');
+    }
+
+    searchInput.addEventListener('focus', () => renderOptions(searchInput.value));
+    searchInput.addEventListener('input', () => renderOptions(searchInput.value));
+    document.addEventListener('click', (e) => {
+      if (!wrapper.contains(e.target)) panel.classList.add('hidden');
+    });
+
+    renderPills();
+  }
+
+  initSearchableMultiSelect('report-org-combobox', 'id_visible_organizations', 'report-org-search', 'report-org-options', 'report-org-pills');
+
+  // Report size hint
+  const sizeSelect = document.getElementById('report-size');
+  const sizeHint = document.getElementById('ai-size-hint');
+  const pageCountInput = document.getElementById('{{ form.page_count.id_for_label }}');
+  function updateSizeHint() {
+    const [pages, words] = sizeSelect.value.split('|');
+    sizeHint.textContent = `~${words} words · ${pages} pages · via Gemini`;
+    pageCountInput.value = pages;
+  }
+  sizeSelect.addEventListener('change', updateSizeHint);
+  updateSizeHint();
+
+  // AI generation
+  const aiPrompt = document.getElementById('ai-prompt');
+  const aiError = document.getElementById('ai-error');
+  const aiGenerateBtn = document.getElementById('ai-generate-btn');
+  const aiGenerateLabel = document.getElementById('ai-generate-label');
+  const csrfToken = document.querySelector('#report-form [name=csrfmiddlewaretoken]').value;
+
+  aiGenerateBtn.addEventListener('click', async () => {
+    const prompt = aiPrompt.value.trim();
+    if (!prompt) {
+      aiError.textContent = 'Describe what you want to generate first.';
+      aiError.classList.remove('hidden');
+      return;
+    }
+    const [, words] = sizeSelect.value.split('|');
+    aiError.classList.add('hidden');
+    aiGenerateBtn.disabled = true;
+    aiGenerateLabel.textContent = 'Generating...';
+
+    try {
+      const response = await fetch("{% url 'report_generate_ai' %}", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `csrfmiddlewaretoken=${encodeURIComponent(csrfToken)}&prompt=${encodeURIComponent(prompt + ` (approximately ${words} words)`)}`,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        aiError.textContent = data.error || 'Something went wrong.';
+        aiError.classList.remove('hidden');
+        return;
+      }
+      titleInput.value = data.title;
+      quill.root.innerHTML = data.body_html;
+    } catch (err) {
+      aiError.textContent = 'Could not reach the server. Please try again.';
+      aiError.classList.remove('hidden');
+    } finally {
+      aiGenerateBtn.disabled = false;
+      aiGenerateLabel.textContent = 'Generate draft';
+    }
+  });
+
+  // Preview modal
+  const previewModal = document.getElementById('preview-modal');
+  document.getElementById('preview-btn').addEventListener('click', () => {
+    document.getElementById('preview-title').textContent = titleInput.value || 'Untitled report';
+    document.getElementById('preview-body').innerHTML = quill.root.innerHTML;
+    previewModal.classList.remove('hidden');
+  });
+  document.getElementById('preview-close').addEventListener('click', () => {
+    previewModal.classList.add('hidden');
+  });
+  previewModal.addEventListener('click', (e) => {
+    if (e.target === previewModal) previewModal.classList.add('hidden');
+  });
+</script>
+{% endblock %}

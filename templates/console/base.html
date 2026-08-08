@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Admin Console{% endblock %} | The Global CIO Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          serif: ['"Source Serif 4"', 'Charter', 'Georgia', 'serif'],
+        },
+      },
+    },
+  }
+</script>
+<script>
+  if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  if (localStorage.sidebarCollapsed === 'true') {
+    document.documentElement.classList.add('sidebar-collapsed');
+  }
+</script>
+<style>
+  html.sidebar-collapsed #sidebar { width: 4.5rem; }
+  html.sidebar-collapsed .sidebar-label { display: none; }
+  html.sidebar-collapsed .nav-item,
+  html.sidebar-collapsed .brand-row { justify-content: center; padding-left: 0; padding-right: 0; }
+
+  #sidebar { transform: translateX(-100%); }
+  #sidebar-backdrop { display: none; }
+  html.mobile-sidebar-open #sidebar { transform: translateX(0); }
+  html.mobile-sidebar-open #sidebar-backdrop { display: block; }
+  @media (min-width: 768px) {
+    #sidebar { transform: none !important; }
+    #sidebar-backdrop { display: none !important; }
+    #admin-main { margin-left: 16rem; transition: margin-left 200ms; }
+    html.sidebar-collapsed #admin-main { margin-left: 4.5rem; }
+  }
+</style>
+{% block extra_style %}{% endblock %}
+</head>
+<body class="min-h-screen bg-gray-50 dark:bg-gray-900 font-sans text-gray-700 dark:text-gray-300">
+
+<div class="flex min-h-screen">
+  <div id="sidebar-backdrop" class="fixed inset-0 bg-black/40 z-30 md:hidden"></div>
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 shrink-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col p-4 transition-transform md:transition-[width] duration-200 overflow-hidden">
+    <div class="brand-row flex items-center gap-2.5 px-2 pb-5">
+      <button type="button" id="sidebar-logo" class="w-9 h-9 rounded-[10px] bg-blue-900 text-white flex items-center justify-center font-serif font-bold text-lg shrink-0" aria-label="Expand sidebar">G</button>
+      <div class="sidebar-label flex-1 min-w-0">
+        <div class="font-serif font-bold text-sm text-blue-900 dark:text-blue-300 leading-tight truncate">The Global CIO Office</div>
+        <div class="text-[10px] tracking-wider font-bold text-blue-600 dark:text-blue-400">ADMIN CONSOLE</div>
+      </div>
+      <button type="button" id="sidebar-toggle" class="sidebar-label w-6 h-6 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 shrink-0" aria-label="Collapse sidebar">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+    </div>
+
+    <div class="mb-4">
+      <div class="sidebar-label text-[10.5px] tracking-wider font-bold text-gray-400 dark:text-gray-500 px-3 py-1.5">MANAGE</div>
+
+      {% if request.user.profile.role.is_admin_role %}
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'dashboard' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'dashboard' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>
+        <span class="sidebar-label">Dashboard</span>
+      </a>
+      {% endif %}
+
+      {% if request.user.profile.role.can_manage_content %}
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'reports' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'report_list' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span class="sidebar-label">Reports</span>
+      </a>
+      {% endif %}
+
+      {% if request.user.profile.role.can_manage_users %}
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'users' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'user_list' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span class="sidebar-label">Users</span>
+      </a>
+      {% endif %}
+
+      {% if request.user.profile.role.can_manage_organizations %}
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'organizations' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'organization_list' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span class="sidebar-label">Organisations</span>
+      </a>
+      {% endif %}
+
+      {% if request.user.profile.role.can_manage_taxonomy %}
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'taxonomy' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'taxonomy' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.24L4 3a1 1 0 0 0-1 1l.24 5.59a2 2 0 0 0 .59 1.41l9.58 9.59a2 2 0 0 0 2.82 0l4.36-4.36a2 2 0 0 0 0-2.82Z"/><circle cx="7.5" cy="7.5" r="1"/></svg>
+        <span class="sidebar-label">Taxonomy</span>
+      </a>
+      {% endif %}
+    </div>
+
+    {% if request.user.profile.role.can_manage_roles or request.user.profile.role.can_view_logs or request.user.profile.role.can_manage_market_data %}
+    <div class="mb-4">
+      <div class="sidebar-label text-[10.5px] tracking-wider font-bold text-gray-400 dark:text-gray-500 px-3 py-1.5">SETTINGS</div>
+
+      {% if request.user.profile.role.can_manage_roles %}
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'roles' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'role_list' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+        <span class="sidebar-label">Roles &amp; permissions</span>
+      </a>
+      {% endif %}
+
+      {% if request.user.profile.role.can_manage_roles %}
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'ai_integration' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'ai_integration' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 2 7l10 5 10-5-10-5ZM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        <span class="sidebar-label">AI Integration</span>
+      </a>
+      {% endif %}
+
+      {% if request.user.profile.role.can_manage_market_data %}
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'market_data' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'market_data' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>
+        <span class="sidebar-label">Market data</span>
+      </a>
+      {% endif %}
+
+      {% if request.user.profile.role.can_view_logs %}
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'logs' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'admin_actions' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+        <span class="sidebar-label">Logs</span>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="flex-1"></div>
+  </aside>
+
+  <div id="admin-main" class="flex-1 flex flex-col min-w-0">
+    {% if request.session.impersonator_id %}
+    <div class="flex items-center justify-between gap-3 px-8 py-2.5 bg-amber-400 dark:bg-amber-500 text-amber-950 text-[13px] font-semibold">
+      <span class="flex items-center gap-2">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Viewing as {{ request.user.get_full_name|default:request.user.email }}
+      </span>
+      <form method="post" action="{% url 'stop_impersonating' %}">
+        {% csrf_token %}
+        <button type="submit" class="underline hover:no-underline">Return to my account</button>
+      </form>
+    </div>
+    {% endif %}
+    <div class="flex items-center justify-between px-4 md:px-8 py-[18px] border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div class="flex items-center gap-3 min-w-0">
+        <button type="button" id="mobile-menu-toggle" class="md:hidden w-9 h-9 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700" aria-label="Open menu">
+          <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+        </button>
+        <div class="text-[13px] text-gray-500 dark:text-gray-400 truncate">{% block breadcrumb %}{% endblock %}</div>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3.5 shrink-0">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-[12.5px] font-semibold border border-blue-100 dark:border-blue-800">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+          <span class="hidden sm:inline">{{ request.user.profile.role.name|default:"Administrator" }}</span>
+        </span>
+        <button type="button" id="theme-toggle" class="w-[34px] h-[34px] rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700" aria-label="Toggle dark mode">
+          <svg id="theme-icon-sun" class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg id="theme-icon-moon" class="w-4 h-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+        </button>
+        <div class="relative" id="user-menu">
+          <button type="button" id="user-menu-toggle" class="block" aria-label="Account menu">
+            {% if request.user.profile.photo %}
+              <img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.get_full_name|default:request.user.username }}" class="w-[34px] h-[34px] rounded-full object-cover">
+            {% else %}
+              <div class="w-[34px] h-[34px] rounded-full bg-blue-900 text-white flex items-center justify-center text-[12.5px] font-bold">{{ request.user.first_name|slice:":1"|default:request.user.username|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}</div>
+            {% endif %}
+          </button>
+          <div id="user-menu-dropdown" class="hidden absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1.5 z-50">
+            <div class="px-3.5 py-2 border-b border-gray-100 dark:border-gray-700">
+              <div class="text-[13px] font-semibold text-gray-900 dark:text-gray-100 truncate">{{ request.user.get_full_name|default:request.user.username }}</div>
+              <div class="text-[12px] text-gray-500 dark:text-gray-400 truncate">{{ request.user.email }}</div>
+            </div>
+            <a href="{% url 'profile' %}" class="flex items-center gap-2.5 px-3.5 py-2.5 text-[13.5px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Edit profile
+            </a>
+            <a href="{% url 'profile_password' %}" class="flex items-center gap-2.5 px-3.5 py-2.5 text-[13.5px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+              Change password
+            </a>
+            <form method="post" action="{% url 'logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="flex items-center gap-2.5 px-3.5 py-2.5 text-[13.5px] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 w-full text-left bg-transparent border-none cursor-pointer font-sans">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+                Log out
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-4 md:p-8 flex-1 overflow-x-hidden">
+      {% if messages %}
+        {% for message in messages %}
+          <div class="p-3 rounded-lg text-[13.5px] mb-5 {% if message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800{% else %}bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800{% endif %}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.theme = isDark ? 'dark' : 'light';
+  });
+
+  function toggleSidebar() {
+    const isCollapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+    localStorage.sidebarCollapsed = isCollapsed;
+  }
+  document.getElementById('sidebar-toggle').addEventListener('click', toggleSidebar);
+  document.getElementById('sidebar-logo').addEventListener('click', () => {
+    if (document.documentElement.classList.contains('sidebar-collapsed')) {
+      toggleSidebar();
+    }
+  });
+
+  function toggleMobileSidebar() {
+    document.documentElement.classList.toggle('mobile-sidebar-open');
+  }
+  document.getElementById('mobile-menu-toggle').addEventListener('click', toggleMobileSidebar);
+  document.getElementById('sidebar-backdrop').addEventListener('click', toggleMobileSidebar);
+  document.querySelectorAll('#sidebar .nav-item').forEach((el) => {
+    el.addEventListener('click', () => {
+      document.documentElement.classList.remove('mobile-sidebar-open');
+    });
+  });
+
+  const userMenu = document.getElementById('user-menu');
+  const userMenuToggle = document.getElementById('user-menu-toggle');
+  const userMenuDropdown = document.getElementById('user-menu-dropdown');
+  userMenuToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    userMenuDropdown.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (!userMenu.contains(e.target)) userMenuDropdown.classList.add('hidden');
+  });
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

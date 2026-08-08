@@ -1,0 +1,9 @@
+{% if report.id in saved_report_ids %}
+<button type="button" class="save-toggle-btn is-saved text-blue-600 shrink-0 cursor-pointer {{ extra_class }}" data-report-id="{{ report.id }}" aria-label="Unsave report" title="Saved">
+  <svg class="w-4 h-4 bookmark-icon pointer-events-none" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+</button>
+{% else %}
+<button type="button" class="save-toggle-btn shrink-0 cursor-pointer {{ extra_class }}" data-report-id="{{ report.id }}" aria-label="Save report" title="Save">
+  <svg class="w-4 h-4 bookmark-icon pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+</button>
+{% endif %}

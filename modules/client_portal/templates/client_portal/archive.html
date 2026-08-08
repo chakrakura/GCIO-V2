@@ -1,0 +1,50 @@
+{% extends "client_portal/base_client.html" %}
+
+{% block title %}Archive{% endblock %}
+
+{% block breadcrumb %}Archive &middot; {{ total_count }} documents{% endblock %}
+
+{% block content %}
+  <div class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+    <div>
+      <div class="text-[10.5px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.18em] mb-2">Full catalogue</div>
+      <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Archive</h1>
+      <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-2xl">The complete historical research library, grouped by year.</p>
+    </div>
+    <div class="text-right shrink-0">
+      <div class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 leading-tight">{{ total_count }}</div>
+      <div class="text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Documents</div>
+    </div>
+  </div>
+
+  <form method="get" id="research-filters-form" class="flex flex-col md:flex-row gap-6 items-start">
+    {% include 'client_portal/partials/archive_filters_aside.html' %}
+
+    <div class="flex-1 min-w-0 w-full">
+      <div class="flex flex-wrap gap-2 mb-4">
+        {% for y in years %}
+        <a href="?{% if year_link_base %}{{ year_link_base }}&{% endif %}year={{ y }}" class="px-4 py-2 rounded-full text-[13px] font-semibold {% if y == selected_year %}bg-blue-900 text-white{% else %}bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">{{ y }}</a>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="year" value="{{ selected_year }}">
+
+      {% include 'client_portal/partials/research_toolbar.html' with search_placeholder='Search the archive...' %}
+
+      <div id="research-results" class="grid grid-cols-1 gap-4">
+        {% for report in reports %}
+          {% include 'client_portal/partials/research_card.html' with report=report %}
+        {% empty %}
+        <div class="md:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center text-gray-400 dark:text-gray-500">
+          No documents match this filter.
+        </div>
+        {% endfor %}
+      </div>
+
+      {% include 'client_portal/partials/research_load_more.html' %}
+    </div>
+  </form>
+{% endblock %}
+
+{% block extra_scripts %}
+  {% include 'client_portal/partials/research_scripts.html' %}
+{% endblock %}

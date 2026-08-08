@@ -1,0 +1,36 @@
+<a href="{% url 'client_report_detail' report.id %}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+  <div class="flex items-center justify-between mb-2">
+    <span class="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-gray-400 dark:text-gray-500 tracking-wider">
+      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+      {{ report.get_content_type_display|upper }}
+    </span>
+    <div class="flex items-center gap-2">
+      {% if report.is_new %}<span class="text-[10px] font-bold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded">NEW</span>{% endif %}
+      {% include 'client_portal/partials/bookmark_button.html' with report=report extra_class='text-gray-300 dark:text-gray-600 hover:text-blue-600 dark:hover:text-blue-400' %}
+    </div>
+  </div>
+  <div class="flex items-center gap-1.5 text-[11px] font-bold text-blue-700 dark:text-blue-400 tracking-wider mb-1.5">
+    <span class="w-1.5 h-1.5 rounded-full {{ report.dot_color }}"></span>
+    {{ report.publication_type.name|default:"REPORT"|upper }} &middot; {{ report.published_at|date:"j M Y"|upper }}
+  </div>
+  <div class="font-serif font-bold text-lg text-blue-900 dark:text-blue-300 mb-2">{{ report.title }}</div>
+  {% if report.description %}<p class="text-gray-500 dark:text-gray-400 text-[13px] mb-3 line-clamp-2">{{ report.description }}</p>{% endif %}
+  {% with acs=report.asset_classes.all|slice:":1" regions=report.countries_regions.all|slice:":1" tags=report.tags.all|slice:":1" %}
+  {% if acs or regions or tags %}
+  <div class="flex flex-wrap gap-1.5 mb-3">
+    {% for ac in acs %}<span class="text-[10.5px] font-semibold px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">{{ ac.name|upper }}</span>{% endfor %}
+    {% for region in regions %}<span class="text-[10.5px] font-semibold px-2 py-1 rounded-md bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400">{{ region.name|upper }}</span>{% endfor %}
+    {% for tag in tags %}<span class="text-[10.5px] font-semibold px-2 py-1 rounded-md bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400">{{ tag.name|upper }}</span>{% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+  <div class="flex items-center justify-between">
+    {% if report.author %}
+    <div class="flex items-center gap-2">
+      <div class="w-6 h-6 rounded-full bg-blue-900 text-white flex items-center justify-center text-[10px] font-bold">{{ report.author.first_name|slice:":1"|default:report.author.username|slice:":1"|upper }}</div>
+      <span class="text-xs text-gray-400 dark:text-gray-500">{{ report.author.get_full_name|default:report.author.username }}</span>
+    </div>
+    {% else %}<span></span>{% endif %}
+    <span class="text-xs text-gray-400 dark:text-gray-500">{{ report.page_count }}p &middot; {{ report.reading_minutes }} min</span>
+  </div>
+</a>

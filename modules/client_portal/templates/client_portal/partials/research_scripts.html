@@ -1,0 +1,65 @@
+<script>
+  document.querySelectorAll('.research-filter-input, #research-sort').forEach((el) => {
+    el.addEventListener('change', () => document.getElementById('research-filters-form').submit());
+  });
+
+  document.querySelectorAll('.research-view-toggle').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const grid = document.getElementById('research-results');
+      grid.classList.toggle('md:grid-cols-2', btn.dataset.view === 'grid');
+
+      document.querySelectorAll('.research-view-toggle').forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle('bg-blue-50', active);
+        b.classList.toggle('dark:bg-blue-900/30', active);
+        b.classList.toggle('text-blue-700', active);
+        b.classList.toggle('dark:text-blue-400', active);
+        b.classList.toggle('text-gray-400', !active);
+        b.classList.toggle('dark:text-gray-500', !active);
+      });
+    });
+  });
+
+  (function () {
+    const wrap = document.getElementById('research-load-more-wrap');
+    const btn = document.getElementById('research-load-more-btn');
+    if (!wrap || !btn) return;
+
+    const spinner = document.getElementById('research-load-more-spinner');
+    const label = document.getElementById('research-load-more-label');
+    const grid = document.getElementById('research-results');
+    let loading = false;
+
+    async function loadNextPage() {
+      if (loading || wrap.dataset.hasNext !== '1') return;
+      loading = true;
+      btn.disabled = true;
+      spinner.classList.remove('hidden');
+      label.textContent = wrap.dataset.loadingLabel;
+
+      const params = new URLSearchParams(wrap.dataset.querystring);
+      params.set('page', wrap.dataset.nextPage);
+
+      let html;
+      try {
+        const resp = await fetch(`?${params.toString()}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!resp.ok) { wrap.classList.add('hidden'); return; }
+        html = await resp.text();
+        wrap.dataset.hasNext = resp.headers.get('X-Has-Next-Page') === '1' ? '1' : '0';
+        wrap.dataset.nextPage = resp.headers.get('X-Next-Page') || '';
+      } catch (err) {
+        return;
+      } finally {
+        loading = false;
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+        label.textContent = wrap.dataset.idleLabel;
+      }
+
+      grid.insertAdjacentHTML('beforeend', html);
+      if (wrap.dataset.hasNext !== '1') wrap.classList.add('hidden');
+    }
+
+    btn.addEventListener('click', loadNextPage);
+  })();
+</script>

@@ -1,0 +1,228 @@
+{% extends "client_portal/base_client.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block breadcrumb %}Home &middot; your morning briefing{% endblock %}
+
+{% block content %}
+  <div class="text-[12px] tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-2">{% now "l, j F Y" %} &middot; LONDON {% now "H:i" %}</div>
+  <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Good {{ greeting }}, {{ request.user.first_name|default:request.user.username }}.</h1>
+  <p class="text-gray-500 dark:text-gray-400 text-[14.5px] mb-7">
+    {% if new_since_login %}{{ new_since_login }} new piece{{ new_since_login|pluralize }} since you last logged in.{% else %}Welcome back — here's what's new on the portal.{% endif %}
+  </p>
+
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5 mb-8">
+    {% for label, value, change, is_up in ticker %}
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+      <div class="text-[10.5px] tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">{{ label }}</div>
+      <div class="font-serif text-lg font-bold text-blue-900 dark:text-blue-300 mb-1">{{ value }}</div>
+      <div class="flex items-center gap-1 text-[12px] font-semibold {% if is_up %}text-green-700 dark:text-green-400{% else %}text-red-700 dark:text-red-400{% endif %}">
+        <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">{% if is_up %}<path d="m18 15-6-6-6 6"/>{% else %}<path d="m6 9 6 6 6-6"/>{% endif %}</svg>
+        {{ change }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="flex items-center gap-2.5 mb-4">
+    <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
+    <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">Featured Research</h2>
+  </div>
+
+  {% if featured or other_reports %}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <div class="lg:col-span-2">
+      {% if featured %}
+      <a href="{% url 'client_report_detail' featured.id %}" class="grid grid-cols-1 {% if hero_chart %}lg:grid-cols-5{% endif %} gap-6 bg-gradient-to-br from-blue-900 to-blue-700 rounded-xl p-7 h-full">
+        <div class="{% if hero_chart %}lg:col-span-3{% endif %} flex flex-col">
+          <div class="flex items-center gap-2 text-[11px] font-bold text-blue-100 tracking-wider mb-3">
+            <span class="w-1.5 h-1.5 rounded-full {{ featured.dot_color }}"></span>
+            {{ featured.publication_type.name|default:"REPORT"|upper }} &middot; FEATURED
+          </div>
+          <div class="text-blue-200 text-[13px] mb-2">{{ featured.published_at|date:"j F Y" }}</div>
+          <div class="font-serif font-bold text-3xl text-white mb-3">{{ featured.title }}</div>
+          <p class="text-blue-100 text-[14.5px] mb-5 line-clamp-3">{{ featured.description|default:"" }}</p>
+
+          <div class="flex items-center gap-3 mt-auto">
+            <span class="inline-flex items-center gap-2 bg-white text-blue-900 rounded-lg px-4 py-2 text-[13.5px] font-semibold">
+              Read report
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </span>
+            {% if featured.author %}
+            <div class="w-7 h-7 rounded-full bg-blue-800 border-2 border-blue-700 text-white flex items-center justify-center text-[11px] font-bold">{{ featured.author.first_name|slice:":1"|default:featured.author.username|slice:":1"|upper }}</div>
+            {% endif %}
+            <span class="text-blue-200 text-[12.5px]">{{ featured.page_count }}p &middot; {{ featured.reading_minutes }}min</span>
+            {% include 'client_portal/partials/bookmark_button.html' with report=featured extra_class='text-blue-200/70 hover:text-white' %}
+          </div>
+        </div>
+
+        {% if hero_chart %}
+        <div class="lg:col-span-2 flex flex-col gap-3">
+          <div class="bg-white rounded-lg p-4">
+            <div class="flex items-baseline justify-between mb-1">
+              <div class="text-[10.5px] tracking-wider font-bold text-gray-500">{{ hero_chart.label|upper }}</div>
+              <div class="text-sm">
+                <span class="font-serif font-bold text-blue-900">{{ hero_chart.value }}</span>
+                <span class="text-green-600 font-semibold ml-1">{{ hero_chart.change }}</span>
+              </div>
+            </div>
+            <svg viewBox="0 0 {{ hero_chart.width }} {{ hero_chart.height }}" class="w-full h-auto">
+              {% for label, y in hero_chart.gridlines %}
+              <line x1="{{ hero_chart.pad_left }}" x2="{{ hero_chart.width }}" y1="{{ y }}" y2="{{ y }}" stroke="#e5e7eb" stroke-width="1"/>
+              <text x="0" y="{{ y|add:4 }}" font-size="10" fill="#9ca3af">{{ label }}</text>
+              {% endfor %}
+              <rect x="{{ hero_chart.shade_x }}" y="{{ hero_chart.plot_top }}" width="{{ hero_chart.shade_width }}" height="{{ hero_chart.plot_height }}" fill="#f3f4f6"/>
+              <line x1="{{ hero_chart.pad_left }}" x2="{{ hero_chart.width }}" y1="{{ hero_chart.threshold_y }}" y2="{{ hero_chart.threshold_y }}" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="4 3"/>
+              <polyline points="{{ hero_chart.points }}" fill="none" stroke="#1e3a8a" stroke-width="2.5"/>
+              <circle cx="{{ hero_chart.last_x }}" cy="{{ hero_chart.last_y }}" r="4" fill="#1e3a8a"/>
+            </svg>
+            <div class="text-[11.5px] text-gray-400 italic mt-1">{{ hero_chart.caption }}</div>
+          </div>
+
+          {% if hero_stats %}
+          <div class="grid grid-cols-2 gap-3">
+            {% for label, value, change, is_up in hero_stats %}
+            <div class="bg-white/10 border border-white/15 rounded-lg p-3">
+              <div class="text-[10px] tracking-wider font-bold text-blue-200 mb-1">{{ label }}</div>
+              <div class="font-serif text-base font-bold text-white">{{ value }}</div>
+              <div class="text-[11.5px] font-semibold {% if is_up %}text-green-300{% else %}text-red-300{% endif %}">{{ change }}</div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        {% endif %}
+      </a>
+      {% endif %}
+    </div>
+
+    <div class="space-y-4">
+      {% for report in other_reports %}
+      <a href="{% url 'client_report_detail' report.id %}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+        <div class="flex items-center justify-between mb-2.5">
+          <span class="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-gray-400 dark:text-gray-500 tracking-wider">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            {{ report.get_content_type_display|upper }}
+          </span>
+          {% include 'client_portal/partials/bookmark_button.html' with report=report extra_class='text-gray-300 dark:text-gray-600 hover:text-blue-600 dark:hover:text-blue-400' %}
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px] font-bold text-blue-700 dark:text-blue-400 tracking-wider mb-1.5">
+          <span class="w-1.5 h-1.5 rounded-full {{ report.dot_color }}"></span>
+          {{ report.publication_type.name|default:"REPORT"|upper }} &middot; {{ report.published_at|date:"j M Y"|upper }}
+        </div>
+        <div class="font-serif font-bold text-lg text-blue-900 dark:text-blue-300 mb-2">{{ report.title }}</div>
+        {% if report.description %}<p class="text-gray-500 dark:text-gray-400 text-[13px] mb-3 line-clamp-2">{{ report.description }}</p>{% endif %}
+        <div class="flex items-center justify-between">
+          {% if report.author %}
+          <div class="flex items-center gap-2">
+            <div class="w-6 h-6 rounded-full bg-blue-900 text-white flex items-center justify-center text-[10px] font-bold">{{ report.author.first_name|slice:":1"|default:report.author.username|slice:":1"|upper }}</div>
+          </div>
+          {% else %}<span></span>{% endif %}
+          <span class="text-xs text-gray-400 dark:text-gray-500">{{ report.reading_minutes }} min</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center text-gray-400 dark:text-gray-500">
+    No research has been published for your organisation yet.
+  </div>
+  {% endif %}
+
+  <div class="flex items-center justify-between mt-10 mb-4">
+    <div class="flex items-center gap-2.5">
+      <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
+      <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">Latest Research</h2>
+    </div>
+    <a href="{% url 'client_browse' %}" class="text-[13px] font-semibold text-blue-700 dark:text-blue-400 hover:underline">View all &rsaquo;</a>
+  </div>
+
+  <div id="latest-research-container">
+    {% include 'client_portal/partials/latest_research.html' %}
+  </div>
+
+  {% if home_publication_types %}
+  <div class="flex items-center gap-2.5 mb-4">
+    <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
+    <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">Regular Publications</h2>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+    {% for pt in home_publication_types %}
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <div class="text-[11px] font-bold text-blue-700 dark:text-blue-400 tracking-wider mb-1">{{ pt.name|upper }}</div>
+      <div class="text-xs text-gray-400 dark:text-gray-500 mb-3">{{ pt.report_count }} report{{ pt.report_count|pluralize }}</div>
+      {% if pt.latest_report %}
+      <div class="text-xs text-gray-400 dark:text-gray-500 mb-1.5">LATEST &middot; {{ pt.latest_report.published_at|date:"j M Y" }}</div>
+      <a href="{% url 'client_report_detail' pt.latest_report.id %}" class="font-serif font-bold text-blue-900 dark:text-blue-300 hover:underline block mb-3">{{ pt.latest_report.title }}</a>
+      {% endif %}
+      <a href="{% url 'client_publication_series' pt.slug %}" class="text-[12.5px] font-semibold text-blue-700 dark:text-blue-400 hover:underline">View all &rsaquo;</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if featured_asset_classes %}
+  <div class="flex items-center gap-2.5 mb-4">
+    <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
+    <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">Research by Asset Class</h2>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+    {% for ac in featured_asset_classes %}
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-700 dark:text-blue-400 shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.828 8.828a2 2 0 0 0 2.828 0l7.172-7.172a2 2 0 0 0 0-2.828Z"/><circle cx="7.5" cy="7.5" r="1"/></svg>
+          </div>
+          <div class="font-semibold text-blue-900 dark:text-blue-300 text-[14.5px]">{{ ac.name }}</div>
+        </div>
+      </div>
+      <div class="text-xs text-gray-400 dark:text-gray-500 mb-3">{{ ac.report_count }} report{{ ac.report_count|pluralize }}</div>
+      {% if ac.latest_report %}
+      <div class="text-xs text-gray-400 dark:text-gray-500 mb-1.5">LATEST &middot; {{ ac.latest_report.published_at|date:"j M Y" }}</div>
+      <a href="{% url 'client_report_detail' ac.latest_report.id %}" class="font-serif font-bold text-blue-900 dark:text-blue-300 hover:underline block mb-3">{{ ac.latest_report.title }}</a>
+      {% endif %}
+      <a href="{% url 'client_browse' %}?asset_class={{ ac.id }}" class="text-[12.5px] font-semibold text-blue-700 dark:text-blue-400 hover:underline">View all &rsaquo;</a>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function () {
+    const container = document.getElementById('latest-research-container');
+
+    container.addEventListener('click', async (e) => {
+      const tab = e.target.closest('.latest-research-tab');
+      if (!tab) return;
+      e.preventDefault();
+
+      const url = tab.getAttribute('href');
+      let html;
+      try {
+        const resp = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!resp.ok) return;
+        html = await resp.text();
+      } catch (err) {
+        return;
+      }
+      container.innerHTML = html;
+      window.history.pushState({}, '', url);
+    });
+
+    window.addEventListener('popstate', async () => {
+      try {
+        const resp = await fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        if (!resp.ok) return;
+        container.innerHTML = await resp.text();
+      } catch (err) {
+        // ignore — user can still reload
+      }
+    });
+  })();
+</script>
+{% endblock %}

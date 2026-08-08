@@ -1,0 +1,88 @@
+{% extends "console/base.html" %}
+
+{% block title %}Roles &amp; permissions{% endblock %}
+
+{% block breadcrumb %}Roles &middot; access &amp; permissions{% endblock %}
+
+{% block content %}
+  <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">ACCESS &amp; PERMISSIONS</div>
+  <div class="flex items-start justify-between gap-5 mb-7">
+    <div>
+      <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Roles &amp; permissions</h1>
+      <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Create custom roles and control exactly what each one can access across the portal.</p>
+    </div>
+    <a class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap" href="{% url 'role_add' %}">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      Add role
+    </a>
+  </div>
+
+  <div class="grid gap-4" style="grid-template-columns:repeat(auto-fill, minmax(320px, 1fr));">
+    {% for role in roles %}
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <div class="flex items-start justify-between mb-2.5">
+        <h3 class="font-serif text-lg font-bold text-blue-900 dark:text-blue-300">{{ role.name }}</h3>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-bold whitespace-nowrap bg-{{ role.color }}-50 text-{{ role.color }}-700">{{ role.is_internal|yesno:"Internal,Client-facing" }}</span>
+      </div>
+      <p class="text-[13px] text-gray-500 dark:text-gray-400 mb-3.5 min-h-[36px]">{{ role.description|default:"No description." }}</p>
+
+      <ul class="flex flex-col gap-1.5 mb-4">
+        <li class="flex items-center gap-2 text-[12.5px] {% if role.can_manage_users %}text-gray-600 dark:text-gray-400{% else %}text-gray-300 dark:text-gray-600{% endif %}">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{% if role.can_manage_users %}<path d="M20 6 9 17l-5-5"/>{% else %}<path d="M18 6 6 18M6 6l12 12"/>{% endif %}</svg>
+          Manage users
+        </li>
+        <li class="flex items-center gap-2 text-[12.5px] {% if role.can_manage_roles %}text-gray-600 dark:text-gray-400{% else %}text-gray-300 dark:text-gray-600{% endif %}">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{% if role.can_manage_roles %}<path d="M20 6 9 17l-5-5"/>{% else %}<path d="M18 6 6 18M6 6l12 12"/>{% endif %}</svg>
+          Manage roles
+        </li>
+        <li class="flex items-center gap-2 text-[12.5px] {% if role.can_manage_organizations %}text-gray-600 dark:text-gray-400{% else %}text-gray-300 dark:text-gray-600{% endif %}">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{% if role.can_manage_organizations %}<path d="M20 6 9 17l-5-5"/>{% else %}<path d="M18 6 6 18M6 6l12 12"/>{% endif %}</svg>
+          Manage organisations
+        </li>
+        <li class="flex items-center gap-2 text-[12.5px] {% if role.can_manage_content %}text-gray-600 dark:text-gray-400{% else %}text-gray-300 dark:text-gray-600{% endif %}">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{% if role.can_manage_content %}<path d="M20 6 9 17l-5-5"/>{% else %}<path d="M18 6 6 18M6 6l12 12"/>{% endif %}</svg>
+          Manage content
+        </li>
+        <li class="flex items-center gap-2 text-[12.5px] {% if role.can_manage_taxonomy %}text-gray-600 dark:text-gray-400{% else %}text-gray-300 dark:text-gray-600{% endif %}">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{% if role.can_manage_taxonomy %}<path d="M20 6 9 17l-5-5"/>{% else %}<path d="M18 6 6 18M6 6l12 12"/>{% endif %}</svg>
+          Manage taxonomy
+        </li>
+        <li class="flex items-center gap-2 text-[12.5px] {% if role.can_view_logs %}text-gray-600 dark:text-gray-400{% else %}text-gray-300 dark:text-gray-600{% endif %}">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{% if role.can_view_logs %}<path d="M20 6 9 17l-5-5"/>{% else %}<path d="M18 6 6 18M6 6l12 12"/>{% endif %}</svg>
+          View logs
+        </li>
+        <li class="flex items-center gap-2 text-[12.5px] {% if role.can_view_all_organizations %}text-gray-600 dark:text-gray-400{% else %}text-gray-300 dark:text-gray-600{% endif %}">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{% if role.can_view_all_organizations %}<path d="M20 6 9 17l-5-5"/>{% else %}<path d="M18 6 6 18M6 6l12 12"/>{% endif %}</svg>
+          View all organisations' content
+        </li>
+        <li class="flex items-center gap-2 text-[12.5px] {% if role.can_manage_market_data %}text-gray-600 dark:text-gray-400{% else %}text-gray-300 dark:text-gray-600{% endif %}">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">{% if role.can_manage_market_data %}<path d="M20 6 9 17l-5-5"/>{% else %}<path d="M18 6 6 18M6 6l12 12"/>{% endif %}</svg>
+          Manage market data
+        </li>
+      </ul>
+
+      <div class="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-3.5">
+        <span class="text-[12.5px] text-gray-500 dark:text-gray-400 font-semibold">{{ role.user_count }} user{{ role.user_count|pluralize }}{% if role.is_system %} &middot; built-in{% endif %}</span>
+        <div class="flex gap-1">
+          <a class="w-[30px] h-[30px] rounded-md border-none bg-transparent text-gray-400 dark:text-gray-500 flex items-center justify-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200" href="{% url 'role_edit' role.id %}" title="Edit">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+          </a>
+          {% if not role.is_system %}
+          <form method="post" action="{% url 'role_delete' role.id %}" onsubmit="return confirm('Delete role \'{{ role.name }}\'?');">
+            {% csrf_token %}
+            <button type="submit" class="w-[30px] h-[30px] rounded-md border-none bg-transparent text-gray-400 dark:text-gray-500 flex items-center justify-center cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-700 dark:hover:text-red-400" title="Delete">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z"/></svg>
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl mt-4">
+    {% include "console/_pagination.html" %}
+  </div>
+  {% endif %}
+{% endblock %}

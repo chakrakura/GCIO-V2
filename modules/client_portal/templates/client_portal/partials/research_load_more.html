@@ -1,0 +1,6 @@
+<div id="research-load-more-wrap" class="py-6 flex items-center justify-center {% if not page_obj.has_next %}hidden{% endif %}" data-next-page="{% if page_obj.has_next %}{{ page_obj.next_page_number }}{% endif %}" data-has-next="{% if page_obj.has_next %}1{% else %}0{% endif %}" data-querystring="{{ querystring }}" data-idle-label="{{ load_more_idle_label|default:'Show more' }}" data-loading-label="{{ load_more_loading_label|default:'Showing more…' }}">
+  <button type="button" id="research-load-more-btn" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-[13.5px] font-semibold disabled:opacity-60 disabled:cursor-not-allowed">
+    <svg id="research-load-more-spinner" class="w-4 h-4 animate-spin hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+    <span id="research-load-more-label">{{ load_more_idle_label|default:'Show more' }}</span>
+  </button>
+</div>

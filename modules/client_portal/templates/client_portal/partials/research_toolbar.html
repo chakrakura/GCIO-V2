@@ -1,0 +1,23 @@
+<div class="flex flex-col sm:flex-row gap-3 mb-4">
+  <div class="relative flex-1">
+    <svg class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" name="q" value="{{ query }}" placeholder="{{ search_placeholder|default:'Search within research...' }}" class="w-full pl-10 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 placeholder:text-gray-400 dark:placeholder:text-gray-500">
+  </div>
+  <div class="relative shrink-0">
+    <select name="sort" id="research-sort" class="appearance-none border border-blue-100 dark:border-blue-800 rounded-lg text-[13.5px] font-semibold bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 pl-3 pr-9 py-2.5 focus:outline-none focus:border-blue-600 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 cursor-pointer">
+      <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest first</option>
+      <option value="oldest" {% if sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+      <option value="title" {% if sort == 'title' %}selected{% endif %}>Title A&ndash;Z</option>
+    </select>
+    <svg class="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 dark:text-blue-500 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+  </div>
+  <div class="flex items-center shrink-0 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+    <button type="button" id="research-view-list" class="research-view-toggle p-2.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400" data-view="list" aria-label="List view">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    </button>
+    <button type="button" id="research-view-grid" class="research-view-toggle p-2.5 text-gray-400 dark:text-gray-500 border-l border-gray-200 dark:border-gray-700" data-view="grid" aria-label="Grid view">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    </button>
+  </div>
+</div>
+<div class="text-[13px] text-gray-400 dark:text-gray-500 mb-4">{{ report_count }} report{{ report_count|pluralize }}</div>

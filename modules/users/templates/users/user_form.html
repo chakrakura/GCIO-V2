@@ -1,0 +1,269 @@
+{% extends "console/base.html" %}
+
+{% block title %}{% if is_edit %}Edit user{% else %}Add user{% endif %}{% endblock %}
+
+{% block breadcrumb %}Users &middot; {% if is_edit %}edit{% else %}add{% endif %}{% endblock %}
+
+{% block content %}
+  <div class="flex items-center gap-2 text-sm mb-6">
+    <a href="{% url 'user_list' %}" class="flex items-center gap-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+      Users
+    </a>
+    <span class="text-gray-300 dark:text-gray-600">/</span>
+    <span class="font-semibold text-blue-900 dark:text-blue-300">{% if is_edit %}Edit user{% else %}Add user{% endif %}</span>
+  </div>
+
+  <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">ACCESS &amp; PERMISSIONS</div>
+  <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">{% if is_edit %}Edit user{% else %}Add user{% endif %}</h1>
+  <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-2xl mb-5">{% if is_edit %}Update {{ target_user.email }}'s organisations and role.{% else %}Create a new user and assign organisations and a role.{% endif %}</p>
+  <div class="border-b border-gray-200 dark:border-gray-700 mb-6"></div>
+
+  <form method="post" enctype="multipart/form-data" id="user-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mb-4">{{ form.non_field_errors }}</div>{% endif %}
+
+    <div class="space-y-6">
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+        <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-4">BASIC INFORMATION</div>
+
+        <div class="mb-5">
+          <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5" for="{{ form.first_name.id_for_label }}">First name</label>
+          {{ form.first_name }}
+          {% if form.first_name.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ form.first_name.errors }}</div>{% endif %}
+        </div>
+
+        <div class="mb-5">
+          <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5" for="{{ form.last_name.id_for_label }}">Last name</label>
+          {{ form.last_name }}
+        </div>
+
+        <div class="mb-5">
+          <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5" for="{{ form.email.id_for_label }}">Email address</label>
+          {{ form.email }}
+          {% if form.email.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ form.email.errors }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5" for="{{ form.password.id_for_label }}">Password</label>
+          {{ form.password }}
+          {% if form.password.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ form.password.errors }}</div>{% endif %}
+          {% if is_edit %}
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Leave blank to keep the current password.</div>
+          {% else %}
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Leave blank to auto-generate a temporary password, shown once after creation.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+        <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-4">PHOTO</div>
+        <div class="flex items-center gap-4">
+          {% if target_user.profile.photo %}
+            <img src="{{ target_user.profile.photo.url }}" alt="{{ target_user.get_full_name }}" class="w-16 h-16 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0">
+          {% else %}
+            <div class="w-16 h-16 rounded-full bg-blue-900 text-white flex items-center justify-center text-xl font-bold shrink-0">
+              {{ target_user.first_name|slice:":1"|default:"?"|upper }}{{ target_user.last_name|slice:":1"|upper }}
+            </div>
+          {% endif %}
+          <div class="flex-1">
+            {{ form.photo }}
+            {% if form.photo.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ form.photo.errors }}</div>{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+        <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-4">ACCESS</div>
+
+        <div class="mb-5">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300" for="organization-search">Organisations</label>
+            <button type="button" id="organization-select-all" class="text-[12.5px] font-semibold text-blue-800 dark:text-blue-300 hover:underline">Select all</button>
+          </div>
+          <div class="relative" id="organization-combobox">
+            <div id="organization-pills" class="flex flex-wrap gap-1.5 mb-2 empty:mb-0"></div>
+            <input type="text" id="organization-search" autocomplete="off" placeholder="Search organisations..."
+              class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+            <div id="organization-options" class="hidden absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"></div>
+            {{ form.organizations }}
+          </div>
+          {% if form.organizations.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ form.organizations.errors }}</div>{% endif %}
+        </div>
+
+        <div>
+          <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5" for="role-search">Role</label>
+          <div class="relative" id="role-combobox">
+            <input type="text" id="role-search" autocomplete="off" placeholder="Search roles..."
+              class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+            <div id="role-options" class="hidden absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"></div>
+            {{ form.role }}
+          </div>
+          {% if form.role.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ form.role.errors }}</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <a class="inline-flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600" href="{% url 'user_list' %}">Cancel</a>
+        <button type="submit" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          {% if is_edit %}Save changes{% else %}Create user{% endif %}
+        </button>
+      </div>
+    </div>
+  </form>
+
+  <script>
+    function initSearchableSelect(wrapperId, realSelectId, searchInputId, panelId, allLabel) {
+      const wrapper = document.getElementById(wrapperId);
+      if (!wrapper) return;
+      const realSelect = document.getElementById(realSelectId);
+      const searchInput = document.getElementById(searchInputId);
+      const panel = document.getElementById(panelId);
+      const options = Array.from(realSelect.options).filter(function (o) { return o.value !== ''; });
+
+      function renderOptions(filter) {
+        const q = filter.trim().toLowerCase();
+        const matches = options.filter(function (o) { return o.text.toLowerCase().includes(q); });
+        panel.innerHTML = '';
+        if (allLabel) {
+          const allItem = document.createElement('div');
+          allItem.className = 'px-3.5 py-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30';
+          allItem.textContent = allLabel;
+          allItem.addEventListener('mousedown', function (e) {
+            e.preventDefault();
+            realSelect.value = '';
+            searchInput.value = '';
+            panel.classList.add('hidden');
+          });
+          panel.appendChild(allItem);
+        }
+        if (!matches.length) {
+          const empty = document.createElement('div');
+          empty.className = 'px-3.5 py-2 text-sm text-gray-400 dark:text-gray-500';
+          empty.textContent = 'No matches';
+          panel.appendChild(empty);
+        } else {
+          matches.forEach(function (o) {
+            const item = document.createElement('div');
+            item.className = 'px-3.5 py-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30';
+            item.textContent = o.text;
+            item.addEventListener('mousedown', function (e) {
+              e.preventDefault();
+              realSelect.value = o.value;
+              searchInput.value = o.text;
+              panel.classList.add('hidden');
+            });
+            panel.appendChild(item);
+          });
+        }
+        panel.classList.remove('hidden');
+      }
+
+      searchInput.addEventListener('focus', function () { renderOptions(''); });
+      searchInput.addEventListener('input', function () { renderOptions(searchInput.value); });
+      searchInput.addEventListener('blur', function () {
+        setTimeout(function () {
+          if (!options.some(function (o) { return o.text === searchInput.value; })) {
+            searchInput.value = '';
+            if (allLabel) realSelect.value = '';
+          }
+        }, 150);
+      });
+      document.addEventListener('click', function (e) {
+        if (!wrapper.contains(e.target)) panel.classList.add('hidden');
+      });
+
+      if (realSelect.value) {
+        searchInput.value = realSelect.options[realSelect.selectedIndex].text;
+      }
+    }
+
+    function initSearchableMultiSelect(wrapperId, realSelectId, searchInputId, panelId, pillsId, selectAllBtnId) {
+      const wrapper = document.getElementById(wrapperId);
+      if (!wrapper) return;
+      const realSelect = document.getElementById(realSelectId);
+      const searchInput = document.getElementById(searchInputId);
+      const panel = document.getElementById(panelId);
+      const pillsBox = document.getElementById(pillsId);
+      const options = Array.from(realSelect.options);
+      const selected = new Set(options.filter(function (o) { return o.selected; }).map(function (o) { return o.value; }));
+
+      function syncRealSelect() {
+        options.forEach(function (o) { o.selected = selected.has(o.value); });
+      }
+
+      function renderPills() {
+        pillsBox.innerHTML = '';
+        options.filter(function (o) { return selected.has(o.value); }).forEach(function (o) {
+          const pill = document.createElement('span');
+          pill.className = 'inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-medium text-[12.5px] pl-2.5 pr-1.5 py-1 rounded-full';
+          pill.textContent = o.text;
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.className = 'w-4 h-4 flex items-center justify-center rounded-full hover:bg-blue-200 dark:hover:bg-blue-800';
+          remove.innerHTML = '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+          remove.addEventListener('click', function () {
+            selected.delete(o.value);
+            syncRealSelect();
+            renderPills();
+          });
+          pill.appendChild(remove);
+          pillsBox.appendChild(pill);
+        });
+      }
+
+      function renderOptions(filter) {
+        const q = filter.trim().toLowerCase();
+        const matches = options.filter(function (o) { return !selected.has(o.value) && o.text.toLowerCase().includes(q); });
+        panel.innerHTML = '';
+        if (!matches.length) {
+          const empty = document.createElement('div');
+          empty.className = 'px-3.5 py-2 text-sm text-gray-400 dark:text-gray-500';
+          empty.textContent = 'No matches';
+          panel.appendChild(empty);
+        } else {
+          matches.forEach(function (o) {
+            const item = document.createElement('div');
+            item.className = 'px-3.5 py-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30';
+            item.textContent = o.text;
+            item.addEventListener('mousedown', function (e) {
+              e.preventDefault();
+              selected.add(o.value);
+              syncRealSelect();
+              renderPills();
+              searchInput.value = '';
+              renderOptions('');
+            });
+            panel.appendChild(item);
+          });
+        }
+        panel.classList.remove('hidden');
+      }
+
+      searchInput.addEventListener('focus', function () { renderOptions(searchInput.value); });
+      searchInput.addEventListener('input', function () { renderOptions(searchInput.value); });
+      document.addEventListener('click', function (e) {
+        if (!wrapper.contains(e.target)) panel.classList.add('hidden');
+      });
+
+      if (selectAllBtnId) {
+        const selectAllBtn = document.getElementById(selectAllBtnId);
+        if (selectAllBtn) {
+          selectAllBtn.addEventListener('click', function () {
+            options.forEach(function (o) { selected.add(o.value); });
+            syncRealSelect();
+            renderPills();
+            searchInput.value = '';
+            panel.classList.add('hidden');
+          });
+        }
+      }
+
+      renderPills();
+    }
+
+    initSearchableMultiSelect('organization-combobox', 'id_organizations', 'organization-search', 'organization-options', 'organization-pills', 'organization-select-all');
+    initSearchableSelect('role-combobox', 'id_role', 'role-search', 'role-options', null);
+  </script>
+{% endblock %}

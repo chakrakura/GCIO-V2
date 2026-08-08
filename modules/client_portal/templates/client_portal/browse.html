@@ -1,0 +1,44 @@
+{% extends "client_portal/base_client.html" %}
+
+{% block title %}Research{% endblock %}
+
+{% block breadcrumb %}Research &middot; browse &amp; discover{% endblock %}
+
+{% block content %}
+  <div class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+    <div class="text-[10.5px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-[0.18em] mb-2">Browse &amp; discover</div>
+    <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Research</h1>
+    <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-2xl">Search, filter, and open every report the GCIO desk has published across asset classes, regions and publication types.</p>
+  </div>
+
+  <form method="get" id="research-filters-form" class="flex flex-col md:flex-row gap-6 items-start">
+    {% include 'client_portal/partials/research_filters_aside.html' %}
+
+    <div class="flex-1 min-w-0 w-full">
+      <div class="flex flex-wrap gap-2 mb-4">
+        {% for value, label in date_range_options %}
+        <a href="?{% if range_link_base %}{{ range_link_base }}&{% endif %}date_range={{ value }}" class="px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold {% if selected_date_range == value %}bg-blue-900 text-white{% else %}bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">{{ label }}</a>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="date_range" value="{{ selected_date_range }}">
+
+      {% include 'client_portal/partials/research_toolbar.html' with search_placeholder='Search within research...' %}
+
+      <div id="research-results" class="grid grid-cols-1 gap-4">
+        {% for report in reports %}
+          {% include 'client_portal/partials/research_card.html' with report=report %}
+        {% empty %}
+        <div class="md:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center text-gray-400 dark:text-gray-500">
+          No research matches this filter.
+        </div>
+        {% endfor %}
+      </div>
+
+      {% include 'client_portal/partials/research_load_more.html' %}
+    </div>
+  </form>
+{% endblock %}
+
+{% block extra_scripts %}
+  {% include 'client_portal/partials/research_scripts.html' %}
+{% endblock %}

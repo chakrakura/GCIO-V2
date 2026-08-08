@@ -1,0 +1,191 @@
+{% extends "console/base.html" %}
+
+{% block title %}Organisations{% endblock %}
+
+{% block breadcrumb %}Organisations &middot; clients{% endblock %}
+
+{% block content %}
+  <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">CLIENTS</div>
+  <div class="flex items-start justify-between gap-5 mb-7">
+    <div>
+      <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Organisations</h1>
+      <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Client organisations that users and content get assigned to.</p>
+    </div>
+    <a class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap" href="{% url 'organization_add' %}">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      Add organisation
+    </a>
+  </div>
+
+  <form class="flex gap-3 mb-[18px] flex-wrap" method="get">
+    <input class="w-56 px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40" type="text" name="q" value="{{ query }}" placeholder="Search organisation name...">
+    <select name="status" class="px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+      <option value="" {% if not status %}selected{% endif %}>All statuses</option>
+      <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+      <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+    </select>
+    <div class="relative min-w-[200px]" id="country-combobox">
+      <input type="text" id="country-search" autocomplete="off" placeholder="All countries"
+        class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+      <div id="country-options" class="hidden absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"></div>
+      <select name="country" id="id_country" class="hidden">
+        <option value="">All countries</option>
+        {% for c in countries %}
+          <option value="{{ c.id }}" {% if country_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="relative min-w-[200px]" id="user-combobox">
+      <input type="text" id="user-search" autocomplete="off" placeholder="All users"
+        class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+      <div id="user-options" class="hidden absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"></div>
+      <select name="user" id="id_user" class="hidden">
+        <option value="">All users</option>
+        {% for u in users %}
+          <option value="{{ u.id }}" {% if user_id == u.id|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-4 py-2.5 text-sm font-semibold">Search</button>
+    {% if query or status or country_id or user_id %}
+      <a href="{% url 'organization_list' %}" class="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-4 py-2.5 text-sm font-semibold">Clear filters</a>
+    {% endif %}
+  </form>
+
+  <script>
+    function initFilterCombobox(wrapperId, realSelectId, searchInputId, panelId, allLabel) {
+      const wrapper = document.getElementById(wrapperId);
+      if (!wrapper) return;
+      const realSelect = document.getElementById(realSelectId);
+      const searchInput = document.getElementById(searchInputId);
+      const panel = document.getElementById(panelId);
+      const options = Array.from(realSelect.options).filter(function (o) { return o.value !== ''; });
+
+      function renderOptions(filter) {
+        const q = filter.trim().toLowerCase();
+        const matches = options.filter(function (o) { return o.text.toLowerCase().includes(q); });
+        panel.innerHTML = '';
+        const allItem = document.createElement('div');
+        allItem.className = 'px-3.5 py-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30';
+        allItem.textContent = allLabel;
+        allItem.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          realSelect.value = '';
+          searchInput.value = '';
+          panel.classList.add('hidden');
+        });
+        panel.appendChild(allItem);
+        if (!matches.length) {
+          const empty = document.createElement('div');
+          empty.className = 'px-3.5 py-2 text-sm text-gray-400 dark:text-gray-500';
+          empty.textContent = 'No matches';
+          panel.appendChild(empty);
+        } else {
+          matches.forEach(function (o) {
+            const item = document.createElement('div');
+            item.className = 'px-3.5 py-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30';
+            item.textContent = o.text;
+            item.addEventListener('mousedown', function (e) {
+              e.preventDefault();
+              realSelect.value = o.value;
+              searchInput.value = o.text;
+              panel.classList.add('hidden');
+            });
+            panel.appendChild(item);
+          });
+        }
+        panel.classList.remove('hidden');
+      }
+
+      searchInput.addEventListener('focus', function () { renderOptions(''); });
+      searchInput.addEventListener('input', function () { renderOptions(searchInput.value); });
+      searchInput.addEventListener('blur', function () {
+        setTimeout(function () {
+          if (!options.some(function (o) { return o.text === searchInput.value; })) {
+            searchInput.value = '';
+            realSelect.value = '';
+          }
+        }, 150);
+      });
+      document.addEventListener('click', function (e) {
+        if (!wrapper.contains(e.target)) panel.classList.add('hidden');
+      });
+
+      if (realSelect.value) {
+        searchInput.value = realSelect.options[realSelect.selectedIndex].text;
+      }
+    }
+
+    initFilterCombobox('country-combobox', 'id_country', 'country-search', 'country-options', 'All countries');
+    initFilterCombobox('user-combobox', 'id_user', 'user-search', 'user-options', 'All users');
+  </script>
+
+  <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <div class="flex justify-end px-5 py-3 text-[12.5px] text-gray-500 dark:text-gray-400 font-semibold">{{ total_count }} organisation{{ total_count|pluralize }}</div>
+    <div class="overflow-x-auto">
+    <table class="w-full border-collapse">
+      <thead>
+        <tr>
+          <th class="text-left text-[11px] tracking-wider font-bold text-gray-400 dark:text-gray-500 px-5 py-2.5 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">Organisation</th>
+          <th class="text-left text-[11px] tracking-wider font-bold text-gray-400 dark:text-gray-500 px-5 py-2.5 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">Country</th>
+          <th class="text-left text-[11px] tracking-wider font-bold text-gray-400 dark:text-gray-500 px-5 py-2.5 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">Users</th>
+          <th class="text-left text-[11px] tracking-wider font-bold text-gray-400 dark:text-gray-500 px-5 py-2.5 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">Status</th>
+          <th class="text-left text-[11px] tracking-wider font-bold text-gray-400 dark:text-gray-500 px-5 py-2.5 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for org in organizations %}
+        <tr>
+          <td class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 text-[13.5px] align-middle">
+            <div class="flex items-center gap-2.5">
+              {% if org.logo %}
+                <img src="{{ org.logo.url }}" alt="{{ org.name }} logo" class="w-[34px] h-[34px] rounded-lg object-cover shrink-0">
+              {% else %}
+                <div class="w-[34px] h-[34px] rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                </div>
+              {% endif %}
+              <div>
+                <div class="font-semibold text-gray-900 dark:text-gray-100">{{ org.name }}</div>
+                {% if org.email %}
+                  <div class="text-[12.5px] text-gray-500 dark:text-gray-400">{{ org.email }}</div>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 text-[13.5px] align-middle">{{ org.country.name|default:"—" }}</td>
+          <td class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 text-[13.5px] align-middle">{{ org.members.count }}</td>
+          <td class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 text-[13.5px] align-middle">
+            {% if org.is_active %}
+              <span class="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-green-700 dark:text-green-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-current"></span>Active
+              </span>
+            {% else %}
+              <span class="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-gray-400 dark:text-gray-500">
+                <span class="w-1.5 h-1.5 rounded-full bg-current"></span>Inactive
+              </span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 text-[13.5px] align-middle">
+            <div class="flex gap-1">
+              <a class="w-[30px] h-[30px] rounded-md border-none bg-transparent text-gray-400 dark:text-gray-500 flex items-center justify-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200" href="{% url 'organization_edit' org.id %}" title="Edit">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+              </a>
+              <form method="post" action="{% url 'organization_toggle_status' org.id %}" onsubmit="return confirm('{% if org.is_active %}Deactivate{% else %}Activate{% endif %} {{ org.name }}?');">
+                {% csrf_token %}
+                <button type="submit" class="w-[30px] h-[30px] rounded-md border-none bg-transparent flex items-center justify-center cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 {% if org.is_active %}text-gray-400 dark:text-gray-500 hover:text-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20{% else %}text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200{% endif %}" title="{% if org.is_active %}Deactivate{% else %}Activate{% endif %}">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-gray-400 dark:text-gray-500 py-8">No organisations match this filter.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% include "console/_pagination.html" %}
+  </div>
+{% endblock %}

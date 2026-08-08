@@ -1,0 +1,183 @@
+{% extends "console/base.html" %}
+
+{% block title %}AI Integration{% endblock %}
+
+{% block breadcrumb %}Settings &middot; AI Integration{% endblock %}
+
+{% block content %}
+  <form method="post" id="ai-settings-form">
+    {% csrf_token %}
+
+    <div class="flex items-start justify-between gap-5 mb-5">
+      <div>
+        <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">SETTINGS</div>
+        <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">AI Integration</h1>
+        <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Connect ChatGPT and Claude to draft reports from a topic. Keys are stored for this workspace and used by the report editor.</p>
+      </div>
+      <button type="submit" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+        Save settings
+      </button>
+    </div>
+
+    <div class="border-b border-gray-200 dark:border-gray-700 mb-6"></div>
+
+    <div class="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-xl px-4 py-3.5 text-[13.5px] text-gray-600 dark:text-gray-400 mb-6">
+      <svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+      In production these keys are held server-side (Django settings / environment variables) and never exposed to the browser. This panel mirrors those fields for the admin.
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
+      {% for p in providers %}
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+        <div class="flex items-start justify-between mb-5">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0
+              {% if p.key == 'openai' %}bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400{% elif p.key == 'anthropic' %}bg-orange-50 text-orange-600{% else %}bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400{% endif %}">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
+            </div>
+            <div>
+              <div class="font-bold text-blue-900 dark:text-blue-300">{{ p.label }}</div>
+              <div class="text-[12.5px] text-gray-500 dark:text-gray-400">{% if p.key == 'openai' %}OpenAI{% elif p.key == 'anthropic' %}Anthropic{% else %}Google{% endif %}</div>
+            </div>
+          </div>
+          <span class="provider-status inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap {% if p.config.is_connected %}bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400{% else %}bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400{% endif %}" data-provider="{{ p.key }}">
+            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+            <span class="status-label">{% if p.config.is_connected %}CONNECTED{% else %}NOT CONNECTED{% endif %}</span>
+          </span>
+        </div>
+
+        <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">API KEY</label>
+        <div class="relative mb-1">
+          <input type="password" name="{{ p.key }}_api_key" id="{{ p.key }}-api-key"
+                 placeholder="{% if p.key == 'openai' %}sk-...{% elif p.key == 'anthropic' %}sk-ant-...{% else %}AIza...{% endif %}"
+                 class="w-full px-3.5 py-2.5 pr-10 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+          <button type="button" class="toggle-key-visibility absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" data-target="{{ p.key }}-api-key">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 mb-4">
+          {% if p.config.api_key %}Currently saved: {{ p.config.masked_key }} — leave blank to keep{% else %}Starts with {% if p.key == 'openai' %}sk-...{% elif p.key == 'anthropic' %}sk-ant-...{% else %}AIza...{% endif %}{% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">DEFAULT MODEL</label>
+            <input type="text" name="{{ p.key }}_default_model" value="{{ p.config.default_model }}" placeholder="{{ p.model_placeholder }}"
+                   class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-semibold text-blue-900 dark:text-blue-300 bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+          </div>
+          {% if p.secondary_label %}
+          <div>
+            <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">{{ p.secondary_label|upper }}</label>
+            <input type="text" name="{{ p.key }}_secondary" value="{{ p.config.secondary_field_value }}" placeholder="{% if p.key == 'openai' %}org-...{% else %}2023-06-01{% endif %}"
+                   class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Optional</div>
+          </div>
+          {% endif %}
+        </div>
+
+        <div id="{{ p.key }}-test-error" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-[12.5px] px-3 py-2 rounded-lg mb-3"></div>
+
+        <button type="button" class="test-connection-btn inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700" data-provider="{{ p.key }}">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <span class="test-btn-label">Test connection</span>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="flex items-center gap-2.5 mb-4">
+      <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
+      <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">Generation defaults</h2>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+        <div>
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">DEFAULT MODEL</label>
+          <select name="default_provider" class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-semibold text-blue-900 dark:text-blue-300 bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+            {% for p in providers %}
+              <option value="{{ p.key }}" {% if defaults.default_provider == p.key %}selected{% endif %}>{{ p.label }} ({% if p.key == 'openai' %}OpenAI{% elif p.key == 'anthropic' %}Anthropic{% else %}Google{% endif %})</option>
+            {% endfor %}
+          </select>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Pre-selected in the report editor.</div>
+        </div>
+        <div>
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">DEFAULT REPORT SIZE</label>
+          <select name="default_report_size" class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-semibold text-blue-900 dark:text-blue-300 bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+            {% for value, label in defaults.SIZE_CHOICES %}
+              <option value="{{ value }}" {% if defaults.default_report_size == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">CREATIVITY (TEMPERATURE) — <span id="temp-value">{{ defaults.temperature }}</span></label>
+      <input type="range" name="temperature" id="temperature-slider" min="0" max="1" step="0.05" value="{{ defaults.temperature }}" class="w-full accent-blue-700 mb-1.5">
+      <div class="text-xs text-gray-500 dark:text-gray-400 mb-5">Lower = more factual and consistent; higher = more varied prose.</div>
+
+      <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="house-style">HOUSE-STYLE INSTRUCTIONS</label>
+      <textarea name="house_style_instructions" id="house-style" rows="4" placeholder="e.g. Always open with the house view in one sentence. Use British spelling. Cite figures with sources in parentheses."
+                class="w-full px-3.5 py-3 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">{{ defaults.house_style_instructions }}</textarea>
+      <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Prepended to every generation as a system prompt.</div>
+    </div>
+  </form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.querySelectorAll('.toggle-key-visibility').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const input = document.getElementById(btn.dataset.target);
+      input.type = input.type === 'password' ? 'text' : 'password';
+    });
+  });
+
+  const tempSlider = document.getElementById('temperature-slider');
+  const tempValue = document.getElementById('temp-value');
+  tempSlider.addEventListener('input', () => {
+    tempValue.textContent = parseFloat(tempSlider.value).toFixed(2);
+  });
+
+  const csrfToken = document.querySelector('#ai-settings-form [name=csrfmiddlewaretoken]').value;
+
+  document.querySelectorAll('.test-connection-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const provider = btn.dataset.provider;
+      const label = btn.querySelector('.test-btn-label');
+      const errorBox = document.getElementById(`${provider}-test-error`);
+      const statusPill = document.querySelector(`.provider-status[data-provider="${provider}"]`);
+      const statusLabel = statusPill.querySelector('.status-label');
+
+      errorBox.classList.add('hidden');
+      btn.disabled = true;
+      label.textContent = 'Testing...';
+
+      try {
+        const response = await fetch(`/ai-integration/${provider}/test/`, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken },
+        });
+        const data = await response.json();
+        if (data.connected) {
+          statusPill.classList.remove('bg-gray-100 dark:bg-gray-700', 'text-gray-500 dark:text-gray-400');
+          statusPill.classList.add('bg-green-50 dark:bg-green-900/20', 'text-green-700 dark:text-green-400');
+          statusLabel.textContent = 'CONNECTED';
+        } else {
+          statusPill.classList.remove('bg-green-50 dark:bg-green-900/20', 'text-green-700 dark:text-green-400');
+          statusPill.classList.add('bg-gray-100 dark:bg-gray-700', 'text-gray-500 dark:text-gray-400');
+          statusLabel.textContent = 'NOT CONNECTED';
+          errorBox.textContent = data.error || 'Could not connect.';
+          errorBox.classList.remove('hidden');
+        }
+      } catch (err) {
+        errorBox.textContent = 'Could not reach the server.';
+        errorBox.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        label.textContent = 'Test connection';
+      }
+    });
+  });
+</script>
+{% endblock %}

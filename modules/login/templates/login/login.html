@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Global CIO Office — Research Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+          serif: ['"Source Serif 4"', 'Charter', 'Georgia', 'serif'],
+        },
+      },
+    },
+  }
+</script>
+<script>
+  if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+</script>
+</head>
+<body class="font-sans text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800">
+
+<div class="min-h-screen grid grid-cols-1 md:grid-cols-2">
+
+  <!-- Left brand panel -->
+  <div class="relative bg-gradient-to-br from-blue-900 to-blue-400 text-white p-10 md:p-14 flex flex-col justify-between overflow-hidden min-h-[280px]">
+    <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.08), transparent 60%);"></div>
+
+    <div class="flex items-center gap-3.5 relative">
+      <div class="w-11 h-11 bg-white dark:bg-gray-800 text-blue-900 dark:text-blue-300 rounded-[10px] flex items-center justify-center font-serif font-bold text-[22px] shrink-0">G</div>
+      <div>
+        <div class="font-serif font-bold text-[17px] leading-tight">The Global CIO Office</div>
+        <div class="text-[11px] tracking-wider text-white/70 font-semibold">RESEARCH PORTAL</div>
+      </div>
+    </div>
+
+    <div class="max-w-[520px] relative">
+      <h1 class="font-serif font-bold text-[28px] md:text-[44px] leading-tight mb-5">Independent macroeconomic and cross-asset research for investment professionals.</h1>
+      <p class="text-base leading-relaxed text-white/85 max-w-[460px] hidden md:block">Daily notes, weekly insights, the monthly digest, special reports and reviewed fund products — the full GCIO library, in one secure place.</p>
+    </div>
+
+    <div class="flex items-center gap-2.5 text-xs tracking-wider font-semibold text-white/70 relative">
+      <span>1,247 DOCUMENTS</span>
+      <span class="w-[3px] h-[3px] rounded-full bg-white/50"></span>
+      <span>SINCE 2016</span>
+      <span class="w-[3px] h-[3px] rounded-full bg-white/50"></span>
+      <span>LONDON</span>
+    </div>
+  </div>
+
+  <!-- Right form panel -->
+  <div class="relative flex items-center justify-center p-8 md:p-10 bg-gray-50 dark:bg-gray-800">
+    <button type="button" id="theme-toggle" class="absolute top-6 right-6 w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Toggle dark mode">
+      <svg id="theme-icon-sun" class="w-4 h-4 hidden dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      <svg id="theme-icon-moon" class="w-4 h-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+    </button>
+    <div class="w-full max-w-[420px]">
+      {% if authenticated %}
+        {% if request.session.impersonator_id %}
+        <div class="flex items-center justify-between gap-3 bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-300 text-[13px] font-semibold px-3.5 py-2.5 rounded-lg mb-5">
+          <span>Viewing as this user</span>
+          <form method="post" action="{% url 'stop_impersonating' %}">
+            {% csrf_token %}
+            <button type="submit" class="underline hover:no-underline">Return to my account</button>
+          </form>
+        </div>
+        {% endif %}
+        <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2.5">CLIENT SIGN IN</div>
+        <h2 class="font-serif font-bold text-[30px] text-blue-900 dark:text-blue-300 mb-2">Welcome, {{ request.user.first_name|default:request.user.email }}</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-7">You're signed in as {{ request.user.email }}.</p>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit" class="w-full flex items-center justify-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg py-3.5 text-[15px] font-semibold">
+            Log out
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          </button>
+        </form>
+      {% else %}
+        <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2.5">CLIENT SIGN IN</div>
+        <h2 class="font-serif font-bold text-[30px] text-blue-900 dark:text-blue-300 mb-2">Welcome back</h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-7">Access is limited to approved GCIO clients.</p>
+
+        {% if error %}
+          <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-[13px] px-3 py-2.5 rounded-lg mb-[18px]">{{ error }}</div>
+        {% endif %}
+
+        <form method="post" id="login-form" class="flex flex-col">
+          {% csrf_token %}
+          <div class="mb-5">
+            <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-2" for="email">Email address</label>
+            <input class="w-full px-3.5 py-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40" type="email" id="email" name="email" placeholder="you@company.com" autocomplete="username" value="{{ submitted_email|default:'' }}" required>
+          </div>
+
+          <div class="mb-5">
+            <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-2" for="password">Password</label>
+            <div class="relative">
+              <input class="w-full px-3.5 py-3 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40" type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required>
+              <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1" id="toggle-password" aria-label="Show password">
+                <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between mb-6">
+            <label class="flex items-center gap-2 text-[13px] text-gray-700 dark:text-gray-300">
+              <input class="w-4 h-4 accent-blue-600" type="checkbox" id="remember" name="remember" checked>
+              Remember me
+            </label>
+            <a class="text-[13px] font-medium text-blue-700 dark:text-blue-400 hover:underline" href="{% url 'password_reset' %}" id="forgot-link">Forgot password?</a>
+          </div>
+
+          <button type="submit" class="w-full flex items-center justify-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg py-3.5 text-[15px] font-semibold">
+            Log in
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+
+        <hr class="border-t border-gray-200 dark:border-gray-700 my-5">
+
+        <div class="flex items-center justify-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-4.5">
+          <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Secure client access · self-registration is not available
+        </div>
+
+        <div class="flex items-center justify-center flex-wrap gap-x-3.5 gap-y-1.5">
+          <a class="text-[13px] text-blue-700 dark:text-blue-400 hover:underline" href="https://www.thegcio.com/contact" target="_blank" rel="noopener">Contact support</a>
+          <span class="text-gray-300 dark:text-gray-600">&middot;</span>
+          <a class="text-[13px] text-blue-700 dark:text-blue-400 hover:underline" href="https://www.thegcio.com/privacy-policy" target="_blank" rel="noopener">Privacy Policy</a>
+          <span class="text-gray-300 dark:text-gray-600">&middot;</span>
+          <a class="text-[13px] text-blue-700 dark:text-blue-400 hover:underline" href="https://www.thegcio.com/services" target="_blank" rel="noopener">Terms of Use</a>
+          <span class="text-gray-300 dark:text-gray-600">&middot;</span>
+          <a class="text-[13px] text-blue-700 dark:text-blue-400 hover:underline" href="#" onclick="return false;">Research Disclaimer</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const pwToggle = document.getElementById('toggle-password');
+  if (pwToggle) {
+    const pwInput = document.getElementById('password');
+    pwToggle.addEventListener('click', () => {
+      const isPw = pwInput.type === 'password';
+      pwInput.type = isPw ? 'text' : 'password';
+    });
+  }
+
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const isDark = document.documentElement.classList.toggle('dark');
+    localStorage.theme = isDark ? 'dark' : 'light';
+  });
+</script>
+
+</body>
+</html>

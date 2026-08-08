@@ -1,0 +1,171 @@
+{% extends "console/base.html" %}
+{% load humanize %}
+
+{% block title %}Admin dashboard{% endblock %}
+
+{% block breadcrumb %}Dashboard &middot; overview{% endblock %}
+
+{% block content %}
+  <div class="flex items-start justify-between gap-5 mb-7 flex-wrap">
+    <div>
+      <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Admin dashboard</h1>
+      <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Publish and govern research, manage client access, and curate what subscribers see first.</p>
+    </div>
+    <div class="flex items-center gap-3">
+      {% if role.can_manage_users %}
+      <a class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 whitespace-nowrap" href="{% url 'user_list' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Manage users
+      </a>
+      {% endif %}
+      {% if role.can_manage_content %}
+      <a class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap" href="{% url 'report_add' %}">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        New report
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="border-b border-gray-200 dark:border-gray-700 mb-7"></div>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2.5">PUBLISHED REPORTS</div>
+      <div class="font-serif text-3xl font-bold text-blue-900 dark:text-blue-300 mb-1.5">{{ stats.published_reports }}</div>
+      <div class="flex items-center gap-1.5 text-[12.5px] font-semibold text-green-700 dark:text-green-400">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+        +{{ stats.published_this_month }} this month
+      </div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2.5">ACTIVE USERS</div>
+      <div class="font-serif text-3xl font-bold text-blue-900 dark:text-blue-300 mb-1.5">{{ stats.active_users }}</div>
+      <div class="flex items-center gap-1.5 text-[12.5px] font-semibold text-green-700 dark:text-green-400">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+        +{{ stats.users_this_month }} this month
+      </div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2.5">ORGANISATIONS</div>
+      <div class="font-serif text-3xl font-bold text-blue-900 dark:text-blue-300 mb-1.5">{{ stats.total_organizations }}</div>
+      <div class="flex items-center gap-1.5 text-[12.5px] font-semibold text-green-700 dark:text-green-400">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+        {{ stats.active_organizations }} active
+      </div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+      <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2.5">DRAFTS IN REVIEW</div>
+      <div class="font-serif text-3xl font-bold text-blue-900 dark:text-blue-300 mb-1.5">{{ stats.draft_reports }}</div>
+      <div class="flex items-center gap-1.5 text-[12.5px] font-semibold text-amber-700 dark:text-amber-400">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        pending publish
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+      <div class="flex items-center gap-2.5 mb-4">
+        <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
+        <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">Recent platform activity</h2>
+      </div>
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+        {% for log in recent_activity %}
+        <div class="flex items-center justify-between gap-3 px-5 py-3.5 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-700{% endif %}">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0
+              {% if 'user' in log.action %}bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400
+              {% elif 'role' in log.action %}bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400
+              {% elif 'taxonomy' in log.action or 'tag' in log.action or 'author' in log.action or 'class' in log.action or 'country' in log.action %}bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400
+              {% elif 'organisation' in log.action %}bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400
+              {% else %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400{% endif %}">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                {% if 'user' in log.action %}<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                {% elif 'role' in log.action or 'taxonomy' in log.action or 'tag' in log.action %}<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.828 8.828a2 2 0 0 0 2.828 0l7.172-7.172a2 2 0 0 0 0-2.828Z"/><circle cx="7.5" cy="7.5" r="1"/>
+                {% elif 'organisation' in log.action %}<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                {% else %}<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>
+                {% endif %}
+              </svg>
+            </div>
+            <div class="min-w-0 text-[13.5px] truncate">
+              <span class="font-bold text-blue-900 dark:text-blue-300">{{ log.actor.get_full_name|default:log.actor.username|default:"System" }}</span>
+              <span class="text-gray-600 dark:text-gray-400"> {{ log.action }}</span>
+              {% if log.target %}<span class="font-bold text-blue-900 dark:text-blue-300"> {{ log.target }}</span>{% endif %}
+            </div>
+          </div>
+          <div class="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">{{ log.created_at|naturaltime }}</div>
+        </div>
+        {% empty %}
+        <div class="text-center text-gray-400 dark:text-gray-500 py-10">No activity yet.</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div>
+      <div class="flex items-center gap-2.5 mb-4">
+        <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
+        <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">Quick actions</h2>
+      </div>
+      <div class="space-y-2.5 mb-6">
+        {% if role.can_manage_content %}
+        <a href="{% url 'report_add' %}" class="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+          </div>
+          <span class="flex-1 text-[13.5px] font-semibold text-gray-800 dark:text-gray-200">New text article</span>
+          <svg class="w-4 h-4 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        <a href="{% url 'report_add' %}" class="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>
+          </div>
+          <span class="flex-1 text-[13.5px] font-semibold text-gray-800 dark:text-gray-200">Upload PDF or deck</span>
+          <svg class="w-4 h-4 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        {% endif %}
+        {% if role.can_manage_users %}
+        <a href="{% url 'user_add' %}" class="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          </div>
+          <span class="flex-1 text-[13.5px] font-semibold text-gray-800 dark:text-gray-200">Invite a user</span>
+          <svg class="w-4 h-4 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        {% endif %}
+        {% if role.can_manage_taxonomy %}
+        <a href="{% url 'taxonomy' %}" class="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.828 8.828a2 2 0 0 0 2.828 0l7.172-7.172a2 2 0 0 0 0-2.828Z"/><circle cx="7.5" cy="7.5" r="1"/></svg>
+          </div>
+          <span class="flex-1 text-[13.5px] font-semibold text-gray-800 dark:text-gray-200">Edit taxonomy</span>
+          <svg class="w-4 h-4 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        {% endif %}
+        {% if role.can_manage_roles %}
+        <a href="{% url 'role_list' %}" class="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <div class="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+          </div>
+          <span class="flex-1 text-[13.5px] font-semibold text-gray-800 dark:text-gray-200">Roles &amp; permissions</span>
+          <svg class="w-4 h-4 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        {% endif %}
+      </div>
+
+      {% if draft_reports %}
+      <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2.5">DRAFTS AWAITING REVIEW</div>
+      <div class="space-y-2">
+        {% for report in draft_reports %}
+        <a href="{% url 'report_edit' report.id %}" class="flex items-center gap-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3.5 py-2.5">
+          <span class="inline-flex items-center gap-1 text-[10.5px] font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">
+            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>DRAFT
+          </span>
+          <span class="text-[13px] font-semibold text-blue-900 dark:text-blue-300 truncate">{{ report.title }}</span>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

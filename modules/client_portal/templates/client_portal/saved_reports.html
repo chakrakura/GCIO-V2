@@ -1,0 +1,48 @@
+{% extends "client_portal/base_client.html" %}
+
+{% block title %}Saved Reports{% endblock %}
+
+{% block breadcrumb %}Saved Reports{% endblock %}
+
+{% block content %}
+  <div class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
+    <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Saved Reports</h1>
+    <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-2xl">Research you've bookmarked for later.</p>
+  </div>
+
+  <form method="get" id="research-filters-form" class="flex flex-col md:flex-row gap-6 items-start">
+    {% include 'client_portal/partials/saved_reports_filters_aside.html' %}
+
+    <div class="flex-1 min-w-0 w-full">
+      <div class="flex flex-wrap gap-2 mb-4">
+        {% for value, label in date_range_options %}
+        <a href="?{% if range_link_base %}{{ range_link_base }}&{% endif %}date_range={{ value }}" class="px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold {% if selected_date_range == value %}bg-blue-900 text-white{% else %}bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">{{ label }}</a>
+        {% endfor %}
+      </div>
+      <input type="hidden" name="date_range" value="{{ selected_date_range }}">
+
+      {% include 'client_portal/partials/research_toolbar.html' with search_placeholder='Search within saved reports...' %}
+
+      <div id="research-results" class="grid grid-cols-1 gap-4" data-remove-on-unsave="1">
+        {% for report in reports %}
+          {% include 'client_portal/partials/research_card.html' with report=report %}
+        {% empty %}
+        <div class="md:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center text-gray-400 dark:text-gray-500">
+          <svg class="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+          {% if query or selected_asset_classes or selected_publication_types or selected_regions or selected_authors or selected_formats or selected_date_range %}
+            No saved reports match this filter.
+          {% else %}
+            You haven't saved any reports yet. Click the bookmark icon on any report to save it here.
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      {% include 'client_portal/partials/research_load_more.html' %}
+    </div>
+  </form>
+{% endblock %}
+
+{% block extra_scripts %}
+  {% include 'client_portal/partials/research_scripts.html' %}
+{% endblock %}

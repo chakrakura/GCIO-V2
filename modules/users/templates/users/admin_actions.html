@@ -1,0 +1,132 @@
+{% extends "console/base.html" %}
+
+{% block title %}Logs{% endblock %}
+
+{% block breadcrumb %}Logs{% endblock %}
+
+{% block content %}
+  <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">MONITORING</div>
+
+  <div class="flex items-start justify-between gap-5 mb-7">
+    <div>
+      <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Logs</h1>
+      <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">A record of what admins and editors have done across the portal — user changes, content, roles, and settings.</p>
+    </div>
+  </div>
+
+  <form class="flex items-end gap-3 mb-6 flex-wrap" method="get" id="logs-filter-form">
+    <div class="relative min-w-[200px]" id="user-filter-combobox">
+      <label class="block text-[11.5px] font-semibold text-gray-500 dark:text-gray-400 mb-1">User</label>
+      <input type="text" id="user-filter-search" autocomplete="off" placeholder="All users"
+        class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+      <div id="user-filter-options" class="hidden absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"></div>
+      <select name="user" id="user-filter-select" class="hidden">
+        <option value="">All users</option>
+        {% for u in users %}
+          <option value="{{ u.id }}" {% if selected_user_id == u.id|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="block text-[11.5px] font-semibold text-gray-500 dark:text-gray-400 mb-1">From</label>
+      <input type="date" name="date_from" value="{{ date_from }}" class="px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+    </div>
+    <div>
+      <label class="block text-[11.5px] font-semibold text-gray-500 dark:text-gray-400 mb-1">To</label>
+      <input type="date" name="date_to" value="{{ date_to }}" class="px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+    </div>
+    <button type="submit" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-4 py-2.5 text-sm font-semibold">Filter</button>
+    {% if has_filters %}<a href="{% url 'admin_actions' %}" class="inline-flex items-center px-4 py-2.5 text-sm font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">Clear filters</a>{% endif %}
+  </form>
+
+  <script>
+    (function () {
+      const wrapper = document.getElementById('user-filter-combobox');
+      if (!wrapper) return;
+      const realSelect = document.getElementById('user-filter-select');
+      const searchInput = document.getElementById('user-filter-search');
+      const panel = document.getElementById('user-filter-options');
+      const options = Array.from(realSelect.options).filter(function (o) { return o.value !== ''; });
+
+      function renderOptions(filter) {
+        const q = filter.trim().toLowerCase();
+        const matches = options.filter(function (o) { return o.text.toLowerCase().includes(q); });
+        panel.innerHTML = '';
+        const allItem = document.createElement('div');
+        allItem.className = 'px-3.5 py-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30';
+        allItem.textContent = 'All users';
+        allItem.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          realSelect.value = '';
+          searchInput.value = '';
+          panel.classList.add('hidden');
+        });
+        panel.appendChild(allItem);
+        if (!matches.length) {
+          const empty = document.createElement('div');
+          empty.className = 'px-3.5 py-2 text-sm text-gray-400 dark:text-gray-500';
+          empty.textContent = 'No matches';
+          panel.appendChild(empty);
+        } else {
+          matches.forEach(function (o) {
+            const item = document.createElement('div');
+            item.className = 'px-3.5 py-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30';
+            item.textContent = o.text;
+            item.addEventListener('mousedown', function (e) {
+              e.preventDefault();
+              realSelect.value = o.value;
+              searchInput.value = o.text;
+              panel.classList.add('hidden');
+            });
+            panel.appendChild(item);
+          });
+        }
+        panel.classList.remove('hidden');
+      }
+
+      searchInput.addEventListener('focus', function () { renderOptions(''); });
+      searchInput.addEventListener('input', function () { renderOptions(searchInput.value); });
+      document.addEventListener('click', function (e) {
+        if (!wrapper.contains(e.target)) panel.classList.add('hidden');
+      });
+
+      if (realSelect.value) {
+        searchInput.value = realSelect.options[realSelect.selectedIndex].text;
+      }
+    })();
+  </script>
+
+  <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <div class="flex justify-end px-5 py-3 text-[12.5px] text-gray-500 dark:text-gray-400 font-semibold">{{ total_count }} action{{ total_count|pluralize }}</div>
+    <div class="overflow-x-auto">
+    <table class="w-full border-collapse">
+      <thead>
+        <tr>
+          <th class="text-left text-[11px] tracking-wider font-bold text-gray-400 dark:text-gray-500 px-5 py-2.5 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">Timestamp</th>
+          <th class="text-left text-[11px] tracking-wider font-bold text-gray-400 dark:text-gray-500 px-5 py-2.5 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">User</th>
+          <th class="text-left text-[11px] tracking-wider font-bold text-gray-400 dark:text-gray-500 px-5 py-2.5 border-b border-gray-200 dark:border-gray-700 whitespace-nowrap">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 text-[13.5px] align-middle text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ log.created_at|date:"M j, Y g:i A" }}</td>
+          <td class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 text-[13.5px] align-middle">
+            <div class="flex items-center gap-2.5">
+              <div class="w-7 h-7 rounded-full bg-blue-900 text-white flex items-center justify-center text-[11px] font-bold shrink-0">{% if log.actor %}{{ log.actor.first_name|slice:":1"|default:log.actor.username|slice:":1"|upper }}{{ log.actor.last_name|slice:":1"|upper }}{% else %}?{% endif %}</div>
+              <span class="font-semibold text-gray-900 dark:text-gray-100">{{ log.actor.get_full_name|default:log.actor.username|default:"System" }}</span>
+            </div>
+          </td>
+          <td class="px-5 py-3.5 border-b border-gray-100 dark:border-gray-700 text-[13.5px] align-middle text-gray-700 dark:text-gray-300">
+            {{ log.action }}{% if log.target %} <span class="font-semibold text-gray-900 dark:text-gray-100">{{ log.target }}</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-center text-gray-400 dark:text-gray-500 py-10">No actions match this filter.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% include "console/_pagination.html" %}
+  </div>
+{% endblock %}

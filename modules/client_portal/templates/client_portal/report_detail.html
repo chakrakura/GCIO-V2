@@ -1,0 +1,319 @@
+{% extends "client_portal/base_client.html" %}
+{% load static %}
+
+{% block title %}{{ report.title }}{% endblock %}
+
+{% block extra_head %}
+{% if is_pptx_file %}
+<link rel="stylesheet" href="{% static 'client_portal/vendor/pptxjs/css/pptxjs.css' %}">
+<link rel="stylesheet" href="{% static 'client_portal/vendor/pptxjs/css/nv.d3.min.css' %}">
+{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}{{ report.publication_type.name|default:"Report" }}{% endblock %}
+
+{% block content %}
+  <a href="{% url 'client_home' %}" class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-6">
+    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+    Back to portal
+  </a>
+
+  <div class="max-w-3xl">
+    <div class="text-[11px] font-bold text-blue-700 dark:text-blue-400 tracking-wider mb-2">{{ report.publication_type.name|default:"REPORT"|upper }} &middot; {{ report.published_at|date:"j F Y"|upper }}</div>
+    <h1 class="font-serif font-bold text-4xl text-blue-900 dark:text-blue-300 mb-4">{{ report.title }}</h1>
+
+    <div class="flex items-center gap-3 mb-7 pb-7 border-b border-gray-200 dark:border-gray-700">
+      {% if report.author %}
+      <div class="w-9 h-9 rounded-full bg-blue-900 text-white flex items-center justify-center text-[13px] font-bold">{{ report.author.first_name|slice:":1"|default:report.author.username|slice:":1"|upper }}{{ report.author.last_name|slice:":1"|upper }}</div>
+      <div>
+        <div class="text-[13.5px] font-semibold text-gray-900 dark:text-gray-100">{{ report.author.get_full_name|default:report.author.username }}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400">{{ report.page_count }} page{{ report.page_count|pluralize }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if report.description %}
+      <p class="text-gray-600 dark:text-gray-400 text-[16px] mb-7 italic">{{ report.description }}</p>
+    {% endif %}
+
+    {% if report.content_type == 'text' %}
+      <div class="prose dark:prose-invert max-w-none text-[15px] leading-relaxed text-gray-800 dark:text-gray-200">{{ report.body|safe }}</div>
+    {% elif preview_pdf_url %}
+      <div class="flex gap-2">
+        <button type="button" id="view-pdf-btn" data-pdf-url="{{ preview_pdf_url }}" data-pdf-title="{{ report.title }}" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+          View {{ preview_label }}
+        </button>
+        {% if preview_label == 'Presentation' %}
+        <button type="button" id="play-pdf-btn" class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          Play
+        </button>
+        {% endif %}
+      </div>
+
+      <div id="pdf-viewer-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 sm:p-8">
+        <div id="pdf-viewer-panel" data-total-pages="{{ preview_page_count|default:0 }}" class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-6xl h-full flex flex-col overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 dark:border-gray-700 shrink-0">
+            <div id="pdf-viewer-title" class="text-[14px] font-semibold text-gray-900 dark:text-gray-100 truncate"></div>
+            <div class="flex items-center gap-1.5">
+              {% if preview_label == 'Presentation' %}
+              <button type="button" id="pdf-viewer-play" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" aria-label="Play fullscreen">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+              </button>
+              {% endif %}
+              <button type="button" id="pdf-viewer-close" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" aria-label="Close preview">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+          </div>
+          <iframe id="pdf-viewer-frame" class="flex-1 w-full bg-gray-100 dark:bg-gray-900" src="" title="PDF preview"></iframe>
+
+          <div id="pdf-play-stage" class="hidden absolute inset-0 bg-black items-center justify-center">
+            <canvas id="pdf-play-canvas"></canvas>
+          </div>
+
+          <div id="pdf-play-controls" class="hidden absolute inset-x-0 bottom-6 items-center justify-center gap-4 pointer-events-none">
+            <button type="button" id="pdf-play-prev" class="pointer-events-auto w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer" aria-label="Previous slide">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
+            <div id="pdf-play-page-indicator" class="pointer-events-none bg-white/15 text-white text-[12.5px] font-semibold px-3 py-1.5 rounded-full"></div>
+            <button type="button" id="pdf-play-next" class="pointer-events-auto w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer" aria-label="Next slide">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    {% elif is_pptx_file %}
+      <button type="button" id="view-ppt-btn" data-ppt-url="{{ report.file_upload.url }}" data-ppt-title="{{ report.title }}" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2Z"/><path d="M22 4h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7Z"/></svg>
+        View Presentation
+      </button>
+
+      <div id="ppt-viewer-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 sm:p-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-6xl h-full flex flex-col overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 dark:border-gray-700 shrink-0">
+            <div id="ppt-viewer-title" class="text-[14px] font-semibold text-gray-900 dark:text-gray-100 truncate"></div>
+            <button type="button" id="ppt-viewer-close" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" aria-label="Close preview">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div id="ppt-viewer-body" class="flex-1 w-full overflow-auto bg-gray-100 dark:bg-gray-900 p-4">
+            <div id="ppt-viewer-loading" class="text-center text-sm text-gray-500 dark:text-gray-400 py-16">Loading presentation&hellip;</div>
+            <div id="ppt-viewer-target"></div>
+          </div>
+        </div>
+      </div>
+    {% elif report.file_upload %}
+      <a href="{{ report.file_upload.url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        Download document
+      </a>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if preview_label == 'Presentation' %}
+<script src="{% static 'client_portal/vendor/pdfjs/pdf.min.js' %}"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'client_portal/vendor/pdfjs/pdf.worker.min.js' %}";</script>
+{% endif %}
+{% if preview_pdf_url %}
+<script>
+  (function () {
+    const btn = document.getElementById('view-pdf-btn');
+    const playBtn = document.getElementById('play-pdf-btn');
+    const headerPlayBtn = document.getElementById('pdf-viewer-play');
+    const modal = document.getElementById('pdf-viewer-modal');
+    const panel = document.getElementById('pdf-viewer-panel');
+    const frame = document.getElementById('pdf-viewer-frame');
+    const titleEl = document.getElementById('pdf-viewer-title');
+    const closeBtn = document.getElementById('pdf-viewer-close');
+    const playStage = document.getElementById('pdf-play-stage');
+    const canvas = document.getElementById('pdf-play-canvas');
+    const playControls = document.getElementById('pdf-play-controls');
+    const prevBtn = document.getElementById('pdf-play-prev');
+    const nextBtn = document.getElementById('pdf-play-next');
+    const pageIndicator = document.getElementById('pdf-play-page-indicator');
+
+    const totalPages = parseInt(panel.dataset.totalPages, 10) || 0;
+    let currentPage = 1;
+    let pdfDoc = null;
+    let inPlayMode = false;
+
+    function requestFullscreen(el) {
+      const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if (request) request.call(el);
+    }
+
+    function exitFullscreen() {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+      if (exit && (document.fullscreenElement || document.webkitFullscreenElement)) exit.call(document);
+    }
+
+    function isFullscreen() {
+      return !!(document.fullscreenElement || document.webkitFullscreenElement);
+    }
+
+    function renderCanvasPage(pageNum) {
+      pdfDoc.getPage(pageNum).then((page) => {
+        const unscaled = page.getViewport({ scale: 1 });
+        const scale = Math.min(
+          (panel.clientWidth - 32) / unscaled.width,
+          (panel.clientHeight - 32) / unscaled.height,
+        );
+        const viewport = page.getViewport({ scale });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        page.render({ canvasContext: ctx, viewport });
+      });
+      if (totalPages) pageIndicator.textContent = pageNum + ' / ' + totalPages;
+    }
+
+    function goToPage(delta) {
+      const next = currentPage + delta;
+      if (next < 1 || (totalPages && next > totalPages)) return;
+      currentPage = next;
+      renderCanvasPage(currentPage);
+    }
+
+    function enterPlayMode() {
+      inPlayMode = true;
+      frame.classList.add('hidden');
+      playStage.classList.remove('hidden');
+      playStage.classList.add('flex');
+      playControls.classList.remove('hidden');
+      playControls.classList.add('flex');
+      currentPage = 1;
+      requestFullscreen(panel);
+      pdfjsLib.getDocument(btn.dataset.pdfUrl).promise.then((doc) => {
+        pdfDoc = doc;
+        renderCanvasPage(currentPage);
+      });
+    }
+
+    function exitPlayMode() {
+      inPlayMode = false;
+      playStage.classList.add('hidden');
+      playStage.classList.remove('flex');
+      playControls.classList.add('hidden');
+      playControls.classList.remove('flex');
+      frame.classList.remove('hidden');
+    }
+
+    function openViewer(play) {
+      titleEl.textContent = btn.dataset.pdfTitle;
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      if (play) {
+        enterPlayMode();
+      } else {
+        frame.src = btn.dataset.pdfUrl + '#toolbar=0&navpanes=1';
+      }
+    }
+
+    function closeViewer() {
+      exitFullscreen();
+      exitPlayMode();
+      modal.classList.add('hidden');
+      frame.src = '';
+      document.body.style.overflow = '';
+    }
+
+    function onFullscreenChange() {
+      // leaving fullscreen from Play mode (Esc, browser chrome, etc.) closes
+      // the whole viewer and drops the user back on the report page
+      if (!isFullscreen() && inPlayMode) closeViewer();
+    }
+
+    btn.addEventListener('click', () => openViewer(false));
+    if (playBtn) playBtn.addEventListener('click', () => openViewer(true));
+    if (headerPlayBtn) headerPlayBtn.addEventListener('click', enterPlayMode);
+    closeBtn.addEventListener('click', closeViewer);
+    prevBtn.addEventListener('click', () => goToPage(-1));
+    nextBtn.addEventListener('click', () => goToPage(1));
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeViewer(); });
+    document.addEventListener('keydown', (e) => {
+      if (modal.classList.contains('hidden')) return;
+      if (e.key === 'Escape') closeViewer();
+      if (inPlayMode && (e.key === 'ArrowRight' || e.key === 'PageDown')) goToPage(1);
+      if (inPlayMode && (e.key === 'ArrowLeft' || e.key === 'PageUp')) goToPage(-1);
+    });
+    window.addEventListener('resize', () => { if (inPlayMode && pdfDoc) renderCanvasPage(currentPage); });
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+  })();
+</script>
+{% endif %}
+{% if is_pptx_file %}
+<script src="{% static 'client_portal/vendor/pptxjs/js/jquery-1.11.3.min.js' %}"></script>
+<script src="{% static 'client_portal/vendor/pptxjs/js/jszip.min.js' %}"></script>
+<script src="{% static 'client_portal/vendor/pptxjs/js/filereader.js' %}"></script>
+<script src="{% static 'client_portal/vendor/pptxjs/js/dingbat.js' %}"></script>
+<script src="{% static 'client_portal/vendor/pptxjs/js/d3.min.js' %}"></script>
+<script src="{% static 'client_portal/vendor/pptxjs/js/nv.d3.min.js' %}"></script>
+<script src="{% static 'client_portal/vendor/pptxjs/js/pptxjs.min.js' %}"></script>
+<script src="{% static 'client_portal/vendor/pptxjs/js/divs2slides.min.js' %}"></script>
+<script>
+  (function () {
+    const btn = document.getElementById('view-ppt-btn');
+    const modal = document.getElementById('ppt-viewer-modal');
+    const target = document.getElementById('ppt-viewer-target');
+    const loading = document.getElementById('ppt-viewer-loading');
+    const titleEl = document.getElementById('ppt-viewer-title');
+    const closeBtn = document.getElementById('ppt-viewer-close');
+    let rendered = false;
+
+    function scaleSlidesToFit() {
+      const containerWidth = target.clientWidth - 8;
+      target.querySelectorAll('.slide').forEach((slide) => {
+        if (slide.dataset.scaled) return;
+        const w = slide.offsetWidth;
+        const h = slide.offsetHeight;
+        if (!w || !h) return;
+        const scale = Math.min(1, containerWidth / w);
+        const wrapper = document.createElement('div');
+        wrapper.style.width = Math.round(w * scale) + 'px';
+        wrapper.style.height = Math.round(h * scale) + 'px';
+        wrapper.style.margin = '0 auto 24px';
+        wrapper.style.overflow = 'hidden';
+        slide.style.transform = 'scale(' + scale + ')';
+        slide.style.transformOrigin = 'top left';
+        slide.dataset.scaled = '1';
+        slide.parentNode.insertBefore(wrapper, slide);
+        wrapper.appendChild(slide);
+      });
+    }
+
+    function openViewer() {
+      titleEl.textContent = btn.dataset.pptTitle;
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      if (!rendered) {
+        rendered = true;
+        jQuery(target).pptxToHtml({
+          pptxFileUrl: btn.dataset.pptUrl,
+          slideMode: false,
+          keyBoardShortCut: false,
+        });
+        setTimeout(() => {
+          scaleSlidesToFit();
+          loading.classList.add('hidden');
+        }, 1200);
+      }
+    }
+
+    function closeViewer() {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    btn.addEventListener('click', openViewer);
+    closeBtn.addEventListener('click', closeViewer);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeViewer(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeViewer(); });
+  })();
+</script>
+{% endif %}
+{% endblock %}

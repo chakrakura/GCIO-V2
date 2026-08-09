@@ -576,9 +576,7 @@ def client_publication_series(request, slug):
     range_link_base = range_link_params.urlencode()
 
     contributors = get_user_model().objects.filter(
-        id__in=_client_reports_current(request.user).filter(publication_type=publication_type).values_list(
-            'author_id', flat=True
-        )
+        id__in=base_reports.values_list('author_id', flat=True)
     ).order_by('first_name', 'last_name')
 
     context = {
@@ -593,6 +591,8 @@ def client_publication_series(request, slug):
         'range_link_base': range_link_base,
         'clear_url': reverse('client_publication_series', args=[slug]) + '?cleared=1',
         'contributors': contributors,
+        'publication_type_filters': publication_type_filters,
+        'selected_publication_types': set(publication_type_ids),
         'saved_report_ids': _saved_report_ids(request.user),
         'hide_date_range': True,
         **selections,

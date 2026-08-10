@@ -33,5 +33,6 @@ urlpatterns = [
     path('', include('modules.login.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Served here (regardless of DEBUG) as a stopgap until Nginx fronts the app with its own
+# /media/ location block — remove this once Nginx takes over serving media files directly.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

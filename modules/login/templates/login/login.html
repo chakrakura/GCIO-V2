@@ -31,7 +31,7 @@
 <div class="min-h-screen grid grid-cols-1 md:grid-cols-2">
 
   <!-- Left brand panel -->
-  <div class="relative bg-gradient-to-br from-blue-900 to-blue-400 text-white p-10 md:p-14 flex flex-col justify-between overflow-hidden min-h-[280px]">
+  <div class="relative bg-gradient-to-br from-blue-950 via-blue-900 to-blue-700 text-white p-10 md:p-14 flex flex-col justify-between overflow-hidden min-h-[280px]">
     <div class="absolute inset-0 pointer-events-none" style="background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.08), transparent 60%);"></div>
 
     <div class="flex items-center gap-3.5 relative">
@@ -159,6 +159,37 @@
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.theme = isDark ? 'dark' : 'light';
   });
+
+  const rememberCheckbox = document.getElementById('remember');
+  const loginForm = document.getElementById('login-form');
+  const emailInput = document.getElementById('email');
+  const REMEMBER_EMAIL_KEY = 'gcio_remembered_email';
+
+  if (rememberCheckbox && loginForm && emailInput) {
+    const applyRememberState = (remember) => {
+      emailInput.setAttribute('autocomplete', remember ? 'username' : 'off');
+      document.getElementById('password').setAttribute('autocomplete', remember ? 'current-password' : 'new-password');
+    };
+
+    // Pre-fill the remembered email on return visits (only if the server didn't
+    // already fill it in after a failed login attempt).
+    const rememberedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY);
+    if (rememberedEmail && !emailInput.value) {
+      emailInput.value = rememberedEmail;
+      rememberCheckbox.checked = true;
+    }
+
+    applyRememberState(rememberCheckbox.checked);
+    rememberCheckbox.addEventListener('change', () => applyRememberState(rememberCheckbox.checked));
+    loginForm.addEventListener('submit', () => {
+      applyRememberState(rememberCheckbox.checked);
+      if (rememberCheckbox.checked) {
+        localStorage.setItem(REMEMBER_EMAIL_KEY, emailInput.value);
+      } else {
+        localStorage.removeItem(REMEMBER_EMAIL_KEY);
+      }
+    });
+  }
 </script>
 
 </body>

@@ -42,6 +42,10 @@ def login_view(request):
         if user is not None:
             previous_login = user.last_login
             login(request, user)
+            if request.POST.get('remember'):
+                request.session.set_expiry(60 * 60 * 24 * 30)  # 30 days
+            else:
+                request.session.set_expiry(0)  # expire when the browser closes
             request.session['previous_login'] = previous_login.isoformat() if previous_login else None
             log_activity(request, 'logged in')
             if _is_internal(user):

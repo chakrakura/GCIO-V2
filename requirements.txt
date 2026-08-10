@@ -10,3 +10,5 @@ openai==2.48.0
 pillow==11.3.0
 pypdf==6.15.0
 requests==2.32.5
+gunicorn==23.0.0
+whitenoise==6.8.2

@@ -124,6 +124,15 @@
   </aside>
 
   <div class="flex-1 flex flex-col min-w-0 md:ml-64">
+    {% if request.session.impersonator_id %}
+    <div class="flex items-center justify-between gap-3 bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-300 text-[13px] font-semibold px-4 md:px-8 py-2.5">
+      <span>Viewing as {{ request.user.get_full_name|default:request.user.username }} (client)</span>
+      <form method="post" action="{% url 'stop_impersonating' %}">
+        {% csrf_token %}
+        <button type="submit" class="underline hover:no-underline">Return to my account</button>
+      </form>
+    </div>
+    {% endif %}
     <div class="flex items-center gap-4 px-4 md:px-8 py-[18px] border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
       <button type="button" id="portal-mobile-menu-toggle" class="md:hidden w-9 h-9 shrink-0 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400" aria-label="Open menu">
         <svg class="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>

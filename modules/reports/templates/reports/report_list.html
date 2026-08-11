@@ -450,7 +450,7 @@
                 <div class="text-[12px] text-gray-500 dark:text-gray-400 mt-1 break-words leading-relaxed">{{ report.description }}</div>
               {% endif %}
             </td>
-            <td class="px-5 py-3.5 text-[13.5px] text-gray-600 dark:text-gray-300 align-middle table-cell-nowrap truncate">{{ report.author.get_full_name|default:report.author.username|default:"—" }}</td>
+            <td class="px-5 py-3.5 text-[13.5px] text-gray-600 dark:text-gray-300 align-middle table-cell-nowrap truncate">{% firstof report.author.get_full_name report.author.username "—" %}</td>
             <td class="px-5 py-3.5 text-[13.5px] text-gray-600 dark:text-gray-300 align-middle table-cell-nowrap">
               <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200/40 dark:border-gray-600/40">
                 {{ report.publication_type.name|default:"—" }}

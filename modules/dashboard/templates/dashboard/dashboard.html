@@ -89,7 +89,7 @@
               </svg>
             </div>
             <div class="min-w-0 text-[13.5px] truncate">
-              <span class="font-bold text-blue-900 dark:text-blue-300">{{ log.actor.get_full_name|default:log.actor.username|default:"System" }}</span>
+              <span class="font-bold text-blue-900 dark:text-blue-300">{% firstof log.actor.get_full_name log.actor.username "System" %}</span>
               <span class="text-gray-600 dark:text-gray-400"> {{ log.action }}</span>
               {% if log.target %}<span class="font-bold text-blue-900 dark:text-blue-300"> {{ log.target }}</span>{% endif %}
             </div>

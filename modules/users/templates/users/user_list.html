@@ -4,6 +4,10 @@
 
 {% block breadcrumb %}Users &middot; access &amp; permissions{% endblock %}
 
+{% block extra_style %}
+  {% include "console/_list_filter_styles.html" %}
+{% endblock %}
+
 {% block content %}
   <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">ACCESS &amp; PERMISSIONS</div>
 
@@ -12,98 +16,233 @@
       <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">User management</h1>
       <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Users are created manually and assigned one or more organisations and a role.</p>
     </div>
-    <a class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap" href="{% url 'user_add' %}">
-      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    <a class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900" href="{% url 'user_add' %}">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
       Add user
     </a>
   </div>
 
-  <form class="flex gap-3 mb-[18px] flex-wrap" method="get" id="user-filter-form">
-    <input class="w-56 px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40" type="text" name="q" value="{{ query }}" placeholder="Search name or email...">
-    <select class="px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40" name="status" onchange="this.form.submit()">
-      <option value="" {% if not status %}selected{% endif %}>All statuses</option>
-      <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
-      <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
-    </select>
-    <select class="px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40" name="role" onchange="this.form.submit()">
-      <option value="">All roles</option>
-      {% for r in roles %}
-        <option value="{{ r.id }}" {% if role_id == r.id|stringformat:"s" %}selected{% endif %}>{{ r.name }}</option>
-      {% endfor %}
-    </select>
-    <div class="relative min-w-[200px]" id="org-filter-combobox">
-      <input type="text" id="org-filter-search" autocomplete="off" placeholder="All organisations"
-        class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
-      <div id="org-filter-options" class="hidden absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"></div>
-      <select name="org" id="org-filter-select" class="hidden">
-        <option value="">All organisations</option>
-        {% for org in organizations %}
-          <option value="{{ org.id }}" {% if org_id == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
-        {% endfor %}
-      </select>
+  <form method="get" id="user-filter-form" class="mb-6">
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+      <div class="relative flex-1 min-w-0 max-w-xl">
+        <label for="user-search-input" class="sr-only">Search users</label>
+        <svg class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input
+          id="user-search-input"
+          type="search"
+          name="q"
+          value="{{ query }}"
+          placeholder="Search name or email..."
+          class="w-full h-10 pl-10 pr-3.5 border border-gray-200 dark:border-gray-700 rounded-lg text-[13.5px] bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-[rgba(30,58,138,0.18)] dark:focus:border-blue-300 dark:focus:ring-blue-900/40 transition-colors duration-200"
+        >
+      </div>
+      <button
+        type="button"
+        id="user-filters-open"
+        class="console-filters-btn shrink-0 {% if status or role_id or org_id %}is-active{% endif %}"
+        aria-haspopup="dialog"
+        aria-controls="user-filter-drawer"
+        aria-expanded="false"
+      >
+        <svg class="filters-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+        Filters
+        <span id="user-filters-count" class="console-filters-count" aria-hidden="true"></span>
+        <span id="user-filters-count-sr" class="sr-only"></span>
+      </button>
     </div>
-    <button type="submit" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-4 py-2.5 text-sm font-semibold">Search</button>
-    {% if query or role_id or org_id or status %}
-      <a href="{% url 'user_list' %}" class="inline-flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-4 py-2.5 text-sm font-semibold">Clear filters</a>
+
+    {% if query or status or role_id or org_id %}
+    <div class="flex flex-wrap items-center gap-2 mt-3.5" role="list" aria-label="Active filters">
+      {% if query %}
+      <button type="button" role="listitem" data-remove-param="q" class="report-filter-chip">
+        <span class="report-filter-chip-key">Search:</span>
+        <span class="truncate">{{ query }}</span>
+        <span class="report-filter-chip-x" aria-hidden="true">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </span>
+        <span class="sr-only">Remove search filter</span>
+      </button>
+      {% endif %}
+
+      {% if status %}
+      <button type="button" role="listitem" data-remove-param="status" class="report-filter-chip">
+        <span class="report-filter-chip-key">Status:</span>
+        <span class="truncate">{% if status == 'active' %}Active{% elif status == 'inactive' %}Inactive{% else %}{{ status }}{% endif %}</span>
+        <span class="report-filter-chip-x" aria-hidden="true">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </span>
+        <span class="sr-only">Remove status filter</span>
+      </button>
+      {% endif %}
+
+      {% if role_id %}
+      <button type="button" role="listitem" data-remove-param="role" class="report-filter-chip">
+        <span class="report-filter-chip-key">Role:</span>
+        <span class="truncate">{% for r in roles %}{% if role_id == r.id|stringformat:"s" %}{{ r.name }}{% endif %}{% endfor %}</span>
+        <span class="report-filter-chip-x" aria-hidden="true">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </span>
+        <span class="sr-only">Remove role filter</span>
+      </button>
+      {% endif %}
+
+      {% if org_id %}
+      <button type="button" role="listitem" data-remove-param="org" class="report-filter-chip">
+        <span class="report-filter-chip-key">Organisation:</span>
+        <span class="truncate">{% for org in organizations %}{% if org_id == org.id|stringformat:"s" %}{{ org.name }}{% endif %}{% endfor %}</span>
+        <span class="report-filter-chip-x" aria-hidden="true">
+          <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </span>
+        <span class="sr-only">Remove organisation filter</span>
+      </button>
+      {% endif %}
+
+      <a href="{% url 'user_list' %}" class="inline-flex items-center h-8 px-2.5 text-[12.5px] font-semibold text-gray-500 dark:text-gray-400 hover:text-blue-900 dark:hover:text-blue-300 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 rounded-md">Clear all</a>
+    </div>
     {% endif %}
+
+    <div
+      id="user-filter-backdrop"
+      class="console-filter-backdrop fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-[2px] opacity-0 pointer-events-none transition-opacity duration-200"
+      aria-hidden="true"
+    ></div>
+
+    <aside
+      id="user-filter-drawer"
+      class="console-filter-drawer fixed inset-y-0 right-0 z-50 w-full max-w-[24rem] sm:max-w-md bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-200 ease-out"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="user-filter-drawer-title"
+      hidden
+    >
+      <div class="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm shrink-0">
+        <div>
+          <h2 id="user-filter-drawer-title" class="text-base font-semibold text-gray-900 dark:text-gray-100">Filters</h2>
+          <p class="text-[12px] text-gray-500 dark:text-gray-400 mt-0.5">Narrow users by status, role, and organisation.</p>
+        </div>
+        <button
+          type="button"
+          id="user-filters-close"
+          class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-100 cursor-pointer transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900"
+          aria-label="Close filters"
+        >
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 space-y-5">
+        <div class="relative" id="user-status-dropdown">
+          <label id="user-status-label" class="report-filter-label">Status</label>
+          <div class="relative">
+            <button
+              type="button"
+              id="user-status-trigger"
+              class="report-dd-trigger px-3.5 pr-10 text-left {% if status %}has-value{% endif %}"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-labelledby="user-status-label user-status-trigger"
+              aria-controls="user-status-options"
+            >
+              <span id="user-status-trigger-label" class="truncate {% if not status %}text-gray-400 dark:text-gray-500 font-normal{% endif %}">
+                {% if status == 'active' %}Active{% elif status == 'inactive' %}Inactive{% else %}All statuses{% endif %}
+              </span>
+            </button>
+            <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <div id="user-status-options" role="listbox" aria-labelledby="user-status-label" class="report-dd-panel hidden"></div>
+          <select name="status" id="id_user_status" class="hidden" tabindex="-1" aria-hidden="true">
+            <option value="" {% if not status %}selected{% endif %}>All statuses</option>
+            <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+
+        <div class="relative" id="user-role-dropdown">
+          <label id="user-role-label" class="report-filter-label">Role</label>
+          <div class="relative">
+            <button
+              type="button"
+              id="user-role-trigger"
+              class="report-dd-trigger px-3.5 pr-10 text-left {% if role_id %}has-value{% endif %}"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+              aria-labelledby="user-role-label user-role-trigger"
+              aria-controls="user-role-options"
+            >
+              <span id="user-role-trigger-label" class="truncate {% if not role_id %}text-gray-400 dark:text-gray-500 font-normal{% endif %}">
+                {% if role_id %}{% for r in roles %}{% if role_id == r.id|stringformat:"s" %}{{ r.name }}{% endif %}{% endfor %}{% else %}All roles{% endif %}
+              </span>
+            </button>
+            <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <div id="user-role-options" role="listbox" aria-labelledby="user-role-label" class="report-dd-panel hidden"></div>
+          <select name="role" id="id_user_role" class="hidden" tabindex="-1" aria-hidden="true">
+            <option value="">All roles</option>
+            {% for r in roles %}
+              <option value="{{ r.id }}" {% if role_id == r.id|stringformat:"s" %}selected{% endif %}>{{ r.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="relative" id="user-org-combobox">
+          <label for="user-org-search" class="report-filter-label">Organisation</label>
+          <div class="relative">
+            <svg class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input
+              type="text"
+              id="user-org-search"
+              autocomplete="off"
+              placeholder="All organisations"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded="false"
+              aria-controls="user-org-options"
+              class="report-dd-trigger w-full pl-10 pr-10"
+            >
+            <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+          <div id="user-org-options" role="listbox" class="report-dd-panel hidden"></div>
+          <select name="org" id="org-filter-select" class="hidden" tabindex="-1" aria-hidden="true">
+            <option value="">All organisations</option>
+            {% for org in organizations %}
+              <option value="{{ org.id }}" {% if org_id == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="sticky bottom-0 z-10 shrink-0 px-5 py-4 border-t border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm flex items-center gap-3">
+        <a
+          href="{% url 'user_list' %}"
+          class="inline-flex items-center justify-center h-10 px-4 flex-1 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
+        >Clear all</a>
+        <button
+          type="submit"
+          class="inline-flex items-center justify-center h-10 px-4 flex-1 rounded-lg bg-blue-900 hover:bg-blue-950 text-white text-sm font-semibold cursor-pointer shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800"
+        >Apply filters</button>
+      </div>
+    </aside>
   </form>
 
+  {% include "console/_list_filter_script.html" %}
   <script>
     (function () {
-      const wrapper = document.getElementById('org-filter-combobox');
-      if (!wrapper) return;
-      const realSelect = document.getElementById('org-filter-select');
-      const searchInput = document.getElementById('org-filter-search');
-      const panel = document.getElementById('org-filter-options');
-      const options = Array.from(realSelect.options).filter(function (o) { return o.value !== ''; });
-
-      function renderOptions(filter) {
-        const q = filter.trim().toLowerCase();
-        const matches = options.filter(function (o) { return o.text.toLowerCase().includes(q); });
-        panel.innerHTML = '';
-        const allItem = document.createElement('div');
-        allItem.className = 'px-3.5 py-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30';
-        allItem.textContent = 'All organisations';
-        allItem.addEventListener('mousedown', function (e) {
-          e.preventDefault();
-          realSelect.value = '';
-          searchInput.value = '';
-          panel.classList.add('hidden');
-          document.getElementById('user-filter-form').submit();
-        });
-        panel.appendChild(allItem);
-        if (!matches.length) {
-          const empty = document.createElement('div');
-          empty.className = 'px-3.5 py-2 text-sm text-gray-400 dark:text-gray-500';
-          empty.textContent = 'No matches';
-          panel.appendChild(empty);
-        } else {
-          matches.forEach(function (o) {
-            const item = document.createElement('div');
-            item.className = 'px-3.5 py-2 text-sm cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30';
-            item.textContent = o.text;
-            item.addEventListener('mousedown', function (e) {
-              e.preventDefault();
-              realSelect.value = o.value;
-              searchInput.value = o.text;
-              panel.classList.add('hidden');
-              document.getElementById('user-filter-form').submit();
-            });
-            panel.appendChild(item);
-          });
-        }
-        panel.classList.remove('hidden');
-      }
-
-      searchInput.addEventListener('focus', function () { renderOptions(''); });
-      searchInput.addEventListener('input', function () { renderOptions(searchInput.value); });
-      document.addEventListener('click', function (e) {
-        if (!wrapper.contains(e.target)) panel.classList.add('hidden');
+      var count = 0;
+      {% if status %}count++;{% endif %}
+      {% if role_id %}count++;{% endif %}
+      {% if org_id %}count++;{% endif %}
+      ConsoleFilterUI.initDrawer({
+        openBtnId: 'user-filters-open',
+        closeBtnId: 'user-filters-close',
+        drawerId: 'user-filter-drawer',
+        backdropId: 'user-filter-backdrop',
+        badgeId: 'user-filters-count',
+        srId: 'user-filters-count-sr',
+        activeCount: count
       });
-
-      if (realSelect.value) {
-        searchInput.value = realSelect.options[realSelect.selectedIndex].text;
-      }
+      ConsoleFilterUI.initCustomSelect('user-status-dropdown', 'id_user_status', 'user-status-trigger', 'user-status-trigger-label', 'user-status-options', 'All statuses');
+      ConsoleFilterUI.initCustomSelect('user-role-dropdown', 'id_user_role', 'user-role-trigger', 'user-role-trigger-label', 'user-role-options', 'All roles');
+      ConsoleFilterUI.initFilterCombobox('user-org-combobox', 'org-filter-select', 'user-org-search', 'user-org-options', 'All organisations');
     })();
   </script>
 

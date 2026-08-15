@@ -11,8 +11,13 @@
       <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Taxonomy management</h1>
       <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Maintain the authors and classification vocabulary used to tag and organise every report.</p>
     </div>
-    {% if not is_authors %}
-    <button type="button" id="open-add-modal" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap">
+    {% if is_authors %}
+    <a href="{% url 'user_add' %}" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap shadow-xs hover:shadow-md transition-all duration-200">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      Add author
+    </a>
+    {% else %}
+    <button type="button" id="open-add-modal" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap shadow-xs hover:shadow-md transition-all duration-200">
       <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
       Add {{ active_singular }}
     </button>

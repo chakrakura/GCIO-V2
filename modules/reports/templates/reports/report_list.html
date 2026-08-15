@@ -46,7 +46,7 @@
       <button
         type="button"
         id="report-filters-open"
-        class="console-filters-btn shrink-0 {% if status or author_id or asset_class_id or country_id or publication_type_id or tag_id or org_id %}is-active{% endif %}"
+        class="console-filters-btn shrink-0 {% if status_list or author_ids or asset_class_ids or country_ids or publication_type_ids or tag_ids or org_ids %}is-active{% endif %}"
         aria-haspopup="dialog"
         aria-controls="report-filter-drawer"
         aria-expanded="false"
@@ -59,7 +59,7 @@
     </div>
 
     {# Active filter chips #}
-    {% if query or status or author_id or asset_class_id or country_id or publication_type_id or tag_id or org_id %}
+    {% if query or status_summary or author_summary or asset_class_summary or country_summary or publication_type_summary or tag_summary or org_summary %}
     <div class="flex flex-wrap items-center gap-2 mt-3.5" role="list" aria-label="Active filters">
       {% if query %}
       <button type="button" role="listitem" data-remove-param="q" class="report-filter-chip">
@@ -72,10 +72,10 @@
       </button>
       {% endif %}
 
-      {% if status %}
+      {% if status_summary %}
       <button type="button" role="listitem" data-remove-param="status" class="report-filter-chip">
         <span class="report-filter-chip-key">Status:</span>
-        <span class="truncate">{% for value, label in status_choices %}{% if status == value %}{{ label }}{% endif %}{% endfor %}</span>
+        <span class="truncate">{{ status_summary }}</span>
         <span class="report-filter-chip-x" aria-hidden="true">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </span>
@@ -83,10 +83,10 @@
       </button>
       {% endif %}
 
-      {% if author_id %}
+      {% if author_summary %}
       <button type="button" role="listitem" data-remove-param="author" class="report-filter-chip">
         <span class="report-filter-chip-key">Author:</span>
-        <span class="truncate">{% for a in authors %}{% if author_id == a.id|stringformat:"s" %}{{ a.get_full_name|default:a.username }}{% endif %}{% endfor %}</span>
+        <span class="truncate">{{ author_summary }}</span>
         <span class="report-filter-chip-x" aria-hidden="true">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </span>
@@ -94,10 +94,10 @@
       </button>
       {% endif %}
 
-      {% if asset_class_id %}
+      {% if asset_class_summary %}
       <button type="button" role="listitem" data-remove-param="asset_class" class="report-filter-chip">
         <span class="report-filter-chip-key">Asset class:</span>
-        <span class="truncate">{% for ac in asset_classes %}{% if asset_class_id == ac.id|stringformat:"s" %}{{ ac.name }}{% endif %}{% endfor %}</span>
+        <span class="truncate">{{ asset_class_summary }}</span>
         <span class="report-filter-chip-x" aria-hidden="true">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </span>
@@ -105,10 +105,10 @@
       </button>
       {% endif %}
 
-      {% if country_id %}
+      {% if country_summary %}
       <button type="button" role="listitem" data-remove-param="country" class="report-filter-chip">
         <span class="report-filter-chip-key">Country/region:</span>
-        <span class="truncate">{% for c in countries_regions %}{% if country_id == c.id|stringformat:"s" %}{{ c.name }}{% endif %}{% endfor %}</span>
+        <span class="truncate">{{ country_summary }}</span>
         <span class="report-filter-chip-x" aria-hidden="true">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </span>
@@ -116,10 +116,10 @@
       </button>
       {% endif %}
 
-      {% if publication_type_id %}
+      {% if publication_type_summary %}
       <button type="button" role="listitem" data-remove-param="publication_type" class="report-filter-chip">
         <span class="report-filter-chip-key">Publication type:</span>
-        <span class="truncate">{% for pt in publication_types %}{% if publication_type_id == pt.id|stringformat:"s" %}{{ pt.name }}{% endif %}{% endfor %}</span>
+        <span class="truncate">{{ publication_type_summary }}</span>
         <span class="report-filter-chip-x" aria-hidden="true">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </span>
@@ -127,10 +127,10 @@
       </button>
       {% endif %}
 
-      {% if tag_id %}
+      {% if tag_summary %}
       <button type="button" role="listitem" data-remove-param="tag" class="report-filter-chip">
         <span class="report-filter-chip-key">Tag:</span>
-        <span class="truncate">{% for t in tags %}{% if tag_id == t.id|stringformat:"s" %}{{ t.name }}{% endif %}{% endfor %}</span>
+        <span class="truncate">{{ tag_summary }}</span>
         <span class="report-filter-chip-x" aria-hidden="true">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </span>
@@ -138,10 +138,10 @@
       </button>
       {% endif %}
 
-      {% if org_id %}
+      {% if org_summary %}
       <button type="button" role="listitem" data-remove-param="org" class="report-filter-chip">
         <span class="report-filter-chip-key">Organisation:</span>
-        <span class="truncate">{% for o in organizations %}{% if org_id == o.id|stringformat:"s" %}{{ o.name }}{% endif %}{% endfor %}</span>
+        <span class="truncate">{{ org_summary }}</span>
         <span class="report-filter-chip-x" aria-hidden="true">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </span>
@@ -205,10 +205,10 @@
             <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </div>
           <div id="status-options" role="listbox" aria-labelledby="status-label" class="report-dd-panel hidden"></div>
-          <select name="status" id="id_status" class="hidden" tabindex="-1" aria-hidden="true">
+          <select name="status" id="id_status" class="hidden" tabindex="-1" aria-hidden="true" multiple>
             <option value="">All statuses</option>
             {% for value, label in status_choices %}
-              <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+              <option value="{{ value }}" {% if value in status_list %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>
@@ -232,10 +232,10 @@
             <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </div>
           <div id="author-options" role="listbox" class="report-dd-panel hidden"></div>
-          <select name="author" id="id_author" class="hidden" tabindex="-1" aria-hidden="true">
+          <select name="author" id="id_author" class="hidden" tabindex="-1" aria-hidden="true" multiple>
             <option value="">All authors</option>
             {% for a in authors %}
-              <option value="{{ a.id }}" {% if author_id == a.id|stringformat:"s" %}selected{% endif %}>{{ a.get_full_name|default:a.username }}</option>
+              <option value="{{ a.id }}" {% if a.id|stringformat:"s" in author_ids %}selected{% endif %}>{{ a.get_full_name|default:a.username }}</option>
             {% endfor %}
           </select>
         </div>
@@ -259,10 +259,10 @@
             <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </div>
           <div id="asset-class-options" role="listbox" class="report-dd-panel hidden"></div>
-          <select name="asset_class" id="id_asset_class" class="hidden" tabindex="-1" aria-hidden="true">
+          <select name="asset_class" id="id_asset_class" class="hidden" tabindex="-1" aria-hidden="true" multiple>
             <option value="">All asset classes</option>
             {% for ac in asset_classes %}
-              <option value="{{ ac.id }}" {% if asset_class_id == ac.id|stringformat:"s" %}selected{% endif %}>{{ ac.name }}</option>
+              <option value="{{ ac.id }}" {% if ac.id|stringformat:"s" in asset_class_ids %}selected{% endif %}>{{ ac.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -286,10 +286,10 @@
             <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </div>
           <div id="country-options" role="listbox" class="report-dd-panel hidden"></div>
-          <select name="country" id="id_country" class="hidden" tabindex="-1" aria-hidden="true">
+          <select name="country" id="id_country" class="hidden" tabindex="-1" aria-hidden="true" multiple>
             <option value="">All countries/regions</option>
             {% for c in countries_regions %}
-              <option value="{{ c.id }}" {% if country_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+              <option value="{{ c.id }}" {% if c.id|stringformat:"s" in country_ids %}selected{% endif %}>{{ c.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -313,10 +313,10 @@
             <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </div>
           <div id="publication-type-options" role="listbox" class="report-dd-panel hidden"></div>
-          <select name="publication_type" id="id_publication_type" class="hidden" tabindex="-1" aria-hidden="true">
+          <select name="publication_type" id="id_publication_type" class="hidden" tabindex="-1" aria-hidden="true" multiple>
             <option value="">All publication types</option>
             {% for pt in publication_types %}
-              <option value="{{ pt.id }}" {% if publication_type_id == pt.id|stringformat:"s" %}selected{% endif %}>{{ pt.name }}</option>
+              <option value="{{ pt.id }}" {% if pt.id|stringformat:"s" in publication_type_ids %}selected{% endif %}>{{ pt.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -340,10 +340,10 @@
             <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </div>
           <div id="tag-options" role="listbox" class="report-dd-panel hidden"></div>
-          <select name="tag" id="id_tag" class="hidden" tabindex="-1" aria-hidden="true">
+          <select name="tag" id="id_tag" class="hidden" tabindex="-1" aria-hidden="true" multiple>
             <option value="">All tags</option>
             {% for t in tags %}
-              <option value="{{ t.id }}" {% if tag_id == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+              <option value="{{ t.id }}" {% if t.id|stringformat:"s" in tag_ids %}selected{% endif %}>{{ t.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -367,10 +367,10 @@
             <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </div>
           <div id="org-options" role="listbox" class="report-dd-panel hidden"></div>
-          <select name="org" id="id_org" class="hidden" tabindex="-1" aria-hidden="true">
+          <select name="org" id="id_org" class="hidden" tabindex="-1" aria-hidden="true" multiple>
             <option value="">All organisations</option>
             {% for o in organizations %}
-              <option value="{{ o.id }}" {% if org_id == o.id|stringformat:"s" %}selected{% endif %}>{{ o.name }}</option>
+              <option value="{{ o.id }}" {% if o.id|stringformat:"s" in org_ids %}selected{% endif %}>{{ o.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -393,13 +393,13 @@
   <script>
     (function () {
       var activeFilters = [
-        "{{ status|default:'' }}",
-        "{{ author_id|default:'' }}",
-        "{{ asset_class_id|default:'' }}",
-        "{{ country_id|default:'' }}",
-        "{{ publication_type_id|default:'' }}",
-        "{{ tag_id|default:'' }}",
-        "{{ org_id|default:'' }}"
+        "{{ status_list|join:',' }}",
+        "{{ author_ids|join:',' }}",
+        "{{ asset_class_ids|join:',' }}",
+        "{{ country_ids|join:',' }}",
+        "{{ publication_type_ids|join:',' }}",
+        "{{ tag_ids|join:',' }}",
+        "{{ org_ids|join:',' }}"
       ];
       var count = activeFilters.filter(Boolean).length;
       ConsoleFilterUI.initDrawer({

@@ -12,6 +12,17 @@ from .forms import OrganizationForm
 from .models import Organization
 
 
+def _get_filter_list(request, param_name):
+    raw_list = request.GET.getlist(param_name)
+    cleaned = []
+    for item in raw_list:
+        for sub in str(item).split(','):
+            val = sub.strip()
+            if val and val != '__none__' and val not in cleaned:
+                cleaned.append(val)
+    return cleaned
+
+
 @permission_required('can_manage_organizations')
 def organization_list(request):
     organizations = Organization.objects.select_related('country').order_by('name')
@@ -20,22 +31,30 @@ def organization_list(request):
     if query:
         organizations = organizations.filter(Q(name__icontains=query))
 
-    status = request.GET.get('status', '').strip()
-    if status == 'active':
+    status_list = _get_filter_list(request, 'status')
+    if 'active' in status_list and 'inactive' not in status_list:
         organizations = organizations.filter(is_active=True)
-    elif status == 'inactive':
+    elif 'inactive' in status_list and 'active' not in status_list:
         organizations = organizations.filter(is_active=False)
 
-    country_id = request.GET.get('country', '').strip()
-    if country_id:
-        organizations = organizations.filter(country_id=country_id)
+    country_ids = _get_filter_list(request, 'country')
+    if country_ids:
+        organizations = organizations.filter(country_id__in=country_ids)
 
-    user_id = request.GET.get('user', '').strip()
-    if user_id:
-        organizations = organizations.filter(members__user_id=user_id).distinct()
+    user_ids = _get_filter_list(request, 'user')
+    if user_ids:
+        organizations = organizations.filter(members__user_id__in=user_ids)
 
+    organizations = organizations.distinct()
     total_count = organizations.count()
     page_obj, base_qs = paginate(request, organizations)
+
+    countries = CountryRegion.objects.filter(is_active=True)
+    users = User.objects.filter(profile__organizations__isnull=False).distinct().order_by('first_name', 'last_name')
+
+    status_summary = ", ".join([s.capitalize() for s in status_list if s in ['active', 'inactive']])
+    country_summary = ", ".join([c.name for c in countries if str(c.id) in country_ids])
+    user_summary = ", ".join([u.get_full_name() or u.username for u in users if str(u.id) in user_ids])
 
     return render(request, 'organizations/organization_list.html', {
         'active_nav': 'organizations',
@@ -43,11 +62,17 @@ def organization_list(request):
         'page_obj': page_obj,
         'base_qs': base_qs,
         'query': query,
-        'status': status,
-        'country_id': country_id,
-        'user_id': user_id,
-        'countries': CountryRegion.objects.filter(is_active=True),
-        'users': User.objects.filter(profile__organizations__isnull=False).distinct().order_by('first_name', 'last_name'),
+        'status_list': status_list,
+        'status': status_list[0] if status_list else '',
+        'status_summary': status_summary,
+        'country_ids': country_ids,
+        'country_id': country_ids[0] if country_ids else '',
+        'country_summary': country_summary,
+        'user_ids': user_ids,
+        'user_id': user_ids[0] if user_ids else '',
+        'user_summary': user_summary,
+        'countries': countries,
+        'users': users,
         'total_count': total_count,
     })
 

@@ -50,7 +50,7 @@
       </button>
     </div>
 
-    {% if query or status or country_id or user_id %}
+    {% if query or status_summary or country_summary or user_summary %}
     <div class="flex flex-wrap items-center gap-2 mt-3.5" role="list" aria-label="Active filters">
       {% if query %}
       <button type="button" role="listitem" data-remove-param="q" class="report-filter-chip">
@@ -63,10 +63,10 @@
       </button>
       {% endif %}
 
-      {% if status %}
+      {% if status_summary %}
       <button type="button" role="listitem" data-remove-param="status" class="report-filter-chip">
         <span class="report-filter-chip-key">Status:</span>
-        <span class="truncate">{% if status == 'active' %}Active{% elif status == 'inactive' %}Inactive{% else %}{{ status }}{% endif %}</span>
+        <span class="truncate">{{ status_summary }}</span>
         <span class="report-filter-chip-x" aria-hidden="true">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </span>
@@ -74,10 +74,10 @@
       </button>
       {% endif %}
 
-      {% if country_id %}
+      {% if country_summary %}
       <button type="button" role="listitem" data-remove-param="country" class="report-filter-chip">
         <span class="report-filter-chip-key">Country:</span>
-        <span class="truncate">{% for c in countries %}{% if country_id == c.id|stringformat:"s" %}{{ c.name }}{% endif %}{% endfor %}</span>
+        <span class="truncate">{{ country_summary }}</span>
         <span class="report-filter-chip-x" aria-hidden="true">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </span>
@@ -85,10 +85,10 @@
       </button>
       {% endif %}
 
-      {% if user_id %}
+      {% if user_summary %}
       <button type="button" role="listitem" data-remove-param="user" class="report-filter-chip">
         <span class="report-filter-chip-key">User:</span>
-        <span class="truncate">{% for u in users %}{% if user_id == u.id|stringformat:"s" %}{{ u.get_full_name|default:u.username }}{% endif %}{% endfor %}</span>
+        <span class="truncate">{{ user_summary }}</span>
         <span class="report-filter-chip-x" aria-hidden="true">
           <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </span>
@@ -149,10 +149,10 @@
             <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </div>
           <div id="org-status-options" role="listbox" aria-labelledby="org-status-label" class="report-dd-panel hidden"></div>
-          <select name="status" id="id_org_status" class="hidden" tabindex="-1" aria-hidden="true">
-            <option value="" {% if not status %}selected{% endif %}>All statuses</option>
-            <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
-            <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+          <select name="status" id="id_org_status" class="hidden" tabindex="-1" aria-hidden="true" multiple>
+            <option value="" {% if not status_list %}selected{% endif %}>All statuses</option>
+            <option value="active" {% if 'active' in status_list %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if 'inactive' in status_list %}selected{% endif %}>Inactive</option>
           </select>
         </div>
 
@@ -174,10 +174,10 @@
             <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </div>
           <div id="org-country-options" role="listbox" class="report-dd-panel hidden"></div>
-          <select name="country" id="id_country" class="hidden" tabindex="-1" aria-hidden="true">
+          <select name="country" id="id_country" class="hidden" tabindex="-1" aria-hidden="true" multiple>
             <option value="">All countries</option>
             {% for c in countries %}
-              <option value="{{ c.id }}" {% if country_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+              <option value="{{ c.id }}" {% if c.id|stringformat:"s" in country_ids %}selected{% endif %}>{{ c.name }}</option>
             {% endfor %}
           </select>
         </div>
@@ -200,10 +200,10 @@
             <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
           </div>
           <div id="org-user-options" role="listbox" class="report-dd-panel hidden"></div>
-          <select name="user" id="id_user" class="hidden" tabindex="-1" aria-hidden="true">
+          <select name="user" id="id_user" class="hidden" tabindex="-1" aria-hidden="true" multiple>
             <option value="">All users</option>
             {% for u in users %}
-              <option value="{{ u.id }}" {% if user_id == u.id|stringformat:"s" %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+              <option value="{{ u.id }}" {% if u.id|stringformat:"s" in user_ids %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
             {% endfor %}
           </select>
         </div>
@@ -225,10 +225,12 @@
   {% include "console/_list_filter_script.html" %}
   <script>
     (function () {
-      var count = 0;
-      {% if status %}count++;{% endif %}
-      {% if country_id %}count++;{% endif %}
-      {% if user_id %}count++;{% endif %}
+      var activeFilters = [
+        "{{ status_list|join:',' }}",
+        "{{ country_ids|join:',' }}",
+        "{{ user_ids|join:',' }}"
+      ];
+      var count = activeFilters.filter(Boolean).length;
       ConsoleFilterUI.initDrawer({
         openBtnId: 'org-filters-open',
         closeBtnId: 'org-filters-close',

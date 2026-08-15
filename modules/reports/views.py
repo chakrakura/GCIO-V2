@@ -39,6 +39,17 @@ def _scoped_reports(user):
     ).distinct()
 
 
+def _get_filter_list(request, param_name):
+    raw_list = request.GET.getlist(param_name)
+    cleaned = []
+    for item in raw_list:
+        for sub in str(item).split(','):
+            val = sub.strip()
+            if val and val != '__none__' and val not in cleaned:
+                cleaned.append(val)
+    return cleaned
+
+
 @permission_required('can_manage_content')
 def report_list(request):
     reports = _scoped_reports(request.user).select_related('author', 'publication_type')
@@ -48,65 +59,54 @@ def report_list(request):
     if query:
         reports = reports.filter(Q(title__icontains=query) | Q(description__icontains=query))
 
-    status = request.GET.get('status', '')
-    if status:
-        reports = reports.filter(status=status)
+    status_list = _get_filter_list(request, 'status')
+    if status_list:
+        reports = reports.filter(status__in=status_list)
 
-    filter_author = None
-    author_id = request.GET.get('author', '').strip()
-    if author_id:
-        reports = reports.filter(author_id=author_id)
-        filter_author = User.objects.filter(pk=author_id).first()
+    author_ids = _get_filter_list(request, 'author')
+    if author_ids:
+        reports = reports.filter(author_id__in=author_ids)
 
-    filter_asset_class = None
-    asset_class_id = request.GET.get('asset_class', '').strip()
-    if asset_class_id:
-        reports = reports.filter(asset_classes__id=asset_class_id)
-        filter_asset_class = AssetClass.objects.filter(pk=asset_class_id).first()
+    asset_class_ids = _get_filter_list(request, 'asset_class')
+    if asset_class_ids:
+        reports = reports.filter(asset_classes__id__in=asset_class_ids)
 
-    filter_country = None
-    country_id = request.GET.get('country', '').strip()
-    if country_id:
-        reports = reports.filter(countries_regions__id=country_id)
-        filter_country = CountryRegion.objects.filter(pk=country_id).first()
+    country_ids = _get_filter_list(request, 'country')
+    if country_ids:
+        reports = reports.filter(countries_regions__id__in=country_ids)
 
-    filter_publication_type = None
-    publication_type_id = request.GET.get('publication_type', '').strip()
-    if publication_type_id:
-        reports = reports.filter(publication_type_id=publication_type_id)
-        filter_publication_type = PublicationType.objects.filter(pk=publication_type_id).first()
+    publication_type_ids = _get_filter_list(request, 'publication_type')
+    if publication_type_ids:
+        reports = reports.filter(publication_type_id__in=publication_type_ids)
 
-    filter_tag = None
-    tag_id = request.GET.get('tag', '').strip()
-    if tag_id:
-        reports = reports.filter(tags__id=tag_id)
-        filter_tag = ReportTag.objects.filter(pk=tag_id).first()
+    tag_ids = _get_filter_list(request, 'tag')
+    if tag_ids:
+        reports = reports.filter(tags__id__in=tag_ids)
 
-    filter_org = None
-    org_id = request.GET.get('org', '').strip()
-    if org_id:
-        reports = reports.filter(visible_organizations__id=org_id)
-        filter_org = scoped_orgs.filter(pk=org_id).first()
+    org_ids = _get_filter_list(request, 'org')
+    if org_ids:
+        reports = reports.filter(visible_organizations__id__in=org_ids)
 
-    if asset_class_id or country_id or tag_id or org_id:
+    if asset_class_ids or country_ids or tag_ids or org_ids:
         reports = reports.distinct()
-
-    filter_label = None
-    if filter_author:
-        filter_label = f'Author: {filter_author.get_full_name() or filter_author.username}'
-    elif filter_asset_class:
-        filter_label = f'Asset class: {filter_asset_class.name}'
-    elif filter_country:
-        filter_label = f'Country/region: {filter_country.name}'
-    elif filter_publication_type:
-        filter_label = f'Publication type: {filter_publication_type.name}'
-    elif filter_tag:
-        filter_label = f'Tag: {filter_tag.name}'
-    elif filter_org:
-        filter_label = f'Organisation: {filter_org.name}'
 
     total_count = reports.count()
     page_obj, base_qs = paginate(request, reports)
+
+    authors = User.objects.filter(is_active=True).order_by('first_name', 'last_name')
+    asset_classes = AssetClass.objects.filter(is_active=True)
+    countries_regions = CountryRegion.objects.filter(is_active=True)
+    publication_types = PublicationType.objects.filter(is_active=True)
+    tags = ReportTag.objects.filter(is_active=True)
+    organizations = scoped_orgs
+
+    status_summary = ", ".join([label for val, label in Report.STATUS_CHOICES if val in status_list])
+    author_summary = ", ".join([a.get_full_name() or a.username for a in authors if str(a.id) in author_ids])
+    asset_class_summary = ", ".join([ac.name for ac in asset_classes if str(ac.id) in asset_class_ids])
+    country_summary = ", ".join([c.name for c in countries_regions if str(c.id) in country_ids])
+    publication_type_summary = ", ".join([pt.name for pt in publication_types if str(pt.id) in publication_type_ids])
+    tag_summary = ", ".join([t.name for t in tags if str(t.id) in tag_ids])
+    org_summary = ", ".join([o.name for o in organizations if str(o.id) in org_ids])
 
     return render(request, 'reports/report_list.html', {
         'active_nav': 'reports',
@@ -114,22 +114,35 @@ def report_list(request):
         'page_obj': page_obj,
         'base_qs': base_qs,
         'query': query,
-        'status': status,
+        'status_list': status_list,
+        'status': status_list[0] if status_list else '',
+        'status_summary': status_summary,
         'status_choices': Report.STATUS_CHOICES,
         'total_count': total_count,
-        'filter_label': filter_label,
-        'author_id': author_id,
-        'asset_class_id': asset_class_id,
-        'country_id': country_id,
-        'publication_type_id': publication_type_id,
-        'tag_id': tag_id,
-        'org_id': org_id,
-        'authors': User.objects.filter(profile__role__is_internal=True).order_by('first_name', 'last_name'),
-        'asset_classes': AssetClass.objects.filter(is_active=True),
-        'countries_regions': CountryRegion.objects.filter(is_active=True),
-        'publication_types': PublicationType.objects.filter(is_active=True),
-        'tags': ReportTag.objects.filter(is_active=True),
-        'organizations': scoped_orgs,
+        'author_ids': author_ids,
+        'author_id': author_ids[0] if author_ids else '',
+        'author_summary': author_summary,
+        'asset_class_ids': asset_class_ids,
+        'asset_class_id': asset_class_ids[0] if asset_class_ids else '',
+        'asset_class_summary': asset_class_summary,
+        'country_ids': country_ids,
+        'country_id': country_ids[0] if country_ids else '',
+        'country_summary': country_summary,
+        'publication_type_ids': publication_type_ids,
+        'publication_type_id': publication_type_ids[0] if publication_type_ids else '',
+        'publication_type_summary': publication_type_summary,
+        'tag_ids': tag_ids,
+        'tag_id': tag_ids[0] if tag_ids else '',
+        'tag_summary': tag_summary,
+        'org_ids': org_ids,
+        'org_id': org_ids[0] if org_ids else '',
+        'org_summary': org_summary,
+        'authors': authors,
+        'asset_classes': asset_classes,
+        'countries_regions': countries_regions,
+        'publication_types': publication_types,
+        'tags': tags,
+        'organizations': organizations,
     })
 
 

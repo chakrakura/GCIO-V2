@@ -27,6 +27,17 @@ def _profile_base_template(user):
     return 'client_portal/base_client.html' if is_client else 'console/base.html'
 
 
+def _get_filter_list(request, param_name):
+    raw_list = request.GET.getlist(param_name)
+    cleaned = []
+    for item in raw_list:
+        for sub in str(item).split(','):
+            val = sub.strip()
+            if val and val != '__none__' and val not in cleaned:
+                cleaned.append(val)
+    return cleaned
+
+
 @permission_required('can_manage_users')
 def user_list(request):
     users = User.objects.select_related('profile', 'profile__role').prefetch_related('profile__organizations').order_by('first_name', 'last_name')
@@ -39,23 +50,30 @@ def user_list(request):
             | Q(email__icontains=query)
         )
 
-    status = request.GET.get('status', '')
-    if status == 'active':
+    status_list = _get_filter_list(request, 'status')
+    if 'active' in status_list and 'inactive' not in status_list:
         users = users.filter(is_active=True)
-    elif status == 'inactive':
+    elif 'inactive' in status_list and 'active' not in status_list:
         users = users.filter(is_active=False)
 
-    role_id = request.GET.get('role', '')
-    if role_id:
-        users = users.filter(profile__role_id=role_id)
+    role_ids = _get_filter_list(request, 'role')
+    if role_ids:
+        users = users.filter(profile__role_id__in=role_ids)
 
-    org_id = request.GET.get('org', '')
-    if org_id:
-        users = users.filter(profile__organizations__id=org_id)
+    org_ids = _get_filter_list(request, 'org')
+    if org_ids:
+        users = users.filter(profile__organizations__id__in=org_ids)
 
     users = users.distinct()
     total_count = users.count()
     page_obj, base_qs = paginate(request, users)
+
+    roles = Role.objects.all().order_by('name')
+    organizations = Organization.objects.all()
+
+    status_summary = ", ".join([s.capitalize() for s in status_list if s in ['active', 'inactive']])
+    role_summary = ", ".join([r.name for r in roles if str(r.id) in role_ids])
+    org_summary = ", ".join([o.name for o in organizations if str(o.id) in org_ids])
 
     return render(request, 'users/user_list.html', {
         'active_nav': 'users',
@@ -63,11 +81,17 @@ def user_list(request):
         'page_obj': page_obj,
         'base_qs': base_qs,
         'query': query,
-        'status': status,
-        'role_id': role_id,
-        'org_id': org_id,
-        'roles': Role.objects.all().order_by('name'),
-        'organizations': Organization.objects.all(),
+        'status_list': status_list,
+        'status': status_list[0] if status_list else '',
+        'status_summary': status_summary,
+        'role_ids': role_ids,
+        'role_id': role_ids[0] if role_ids else '',
+        'role_summary': role_summary,
+        'org_ids': org_ids,
+        'org_id': org_ids[0] if org_ids else '',
+        'org_summary': org_summary,
+        'roles': roles,
+        'organizations': organizations,
         'total_count': total_count,
     })
 

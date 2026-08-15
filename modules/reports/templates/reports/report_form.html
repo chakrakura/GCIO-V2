@@ -354,6 +354,10 @@
       <div class="flex items-center justify-between px-6 py-3.5 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-white dark:bg-gray-800">
         <h2 id="preview-title" class="font-serif font-bold text-xl text-gray-900 dark:text-gray-100 truncate"></h2>
         <div class="flex items-center gap-2">
+          <a id="preview-download-btn" href="#" download class="hidden inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white transition-colors cursor-pointer shadow-2xs" title="Download original file">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span id="preview-download-label">Download PPTX</span>
+          </a>
           <button type="button" id="preview-play-btn" class="hidden w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" title="Play fullscreen presentation">
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
           </button>
@@ -408,8 +412,8 @@
   const form = document.getElementById('report-form');
   const statusInput = document.getElementById('{{ form.status.id_for_label }}');
   const titleInput = document.getElementById('{{ form.title.id_for_label }}');
-  const existingFileUrl = {% if report.file_upload %}"{{ report.file_upload.url }}"{% else %}null{% endif %};
-  const previewPdfUrl = {% if preview_pdf_url %}"{{ preview_pdf_url }}"{% else %}null{% endif %};
+  const existingFileUrl = "{{ report.file_upload.url|default:'' }}" || null;
+  const previewPdfUrl = "{{ preview_pdf_url|default:'' }}" || null;
 
   function validateForm() {
     const checkedRadio = document.querySelector('input[name="content_type"]:checked');
@@ -438,7 +442,7 @@
       if (realFileInput && realFileInput.files && realFileInput.files[0]) {
         fileName = realFileInput.files[0].name;
       } else if (existingFileUrl) {
-        const rawName = {% if report.file_upload %}"{{ report.file_upload.name }}"{% else %}""{% endif %};
+        const rawName = "{{ report.file_upload.name|default:'' }}";
         fileName = rawName.split('/').pop().split('\\').pop();
       }
       if (!fileName) {
@@ -455,7 +459,7 @@
       if (realFileInput && realFileInput.files && realFileInput.files[0]) {
         fileName = realFileInput.files[0].name;
       } else if (existingFileUrl) {
-        const rawName = {% if report.file_upload %}"{{ report.file_upload.name }}"{% else %}""{% endif %};
+        const rawName = "{{ report.file_upload.name|default:'' }}";
         fileName = rawName.split('/').pop().split('\\').pop();
       }
       if (!fileName) {
@@ -1093,7 +1097,6 @@
 
   document.addEventListener('fullscreenchange', onFullscreenChange);
   document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-
   function closePreviewModal() {
     exitPlayMode();
     previewModal.classList.add('hidden');
@@ -1105,18 +1108,26 @@
     const checkedRadio = document.querySelector('input[name="content_type"]:checked');
     const contentType = checkedRadio ? checkedRadio.value : 'text';
     let targetUrl = null;
+    let originalFileUrl = null;
+    let originalFileName = '';
     let isPptx = false;
     let pptxFileName = '';
 
     if (fileInput && fileInput.files && fileInput.files[0]) {
       const file = fileInput.files[0];
+      originalFileUrl = URL.createObjectURL(file);
+      originalFileName = file.name;
       const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       if (isPdf) {
-        targetUrl = URL.createObjectURL(file);
+        targetUrl = originalFileUrl;
       } else {
         isPptx = true;
         pptxFileName = file.name;
       }
+    } else if (existingFileUrl) {
+      originalFileUrl = existingFileUrl;
+      const rawName = "{{ report.file_upload.name|default:'' }}";
+      originalFileName = rawName.split('/').pop().split('\\').pop();
     }
 
     if (!targetUrl && previewPdfUrl) {
@@ -1128,22 +1139,37 @@
         isPptx = false;
       } else {
         isPptx = true;
-        const rawName = {% if report.file_upload %}"{{ report.file_upload.name }}"{% else %}""{% endif %};
-        pptxFileName = rawName.split('/').pop().split('\\').pop();
+        pptxFileName = originalFileName;
       }
     }
 
-    return { contentType, targetUrl, isPptx, pptxFileName };
+    return { contentType, targetUrl, originalFileUrl, originalFileName, isPptx, pptxFileName };
   }
 
   function openPreviewModal(playMode) {
-    const { contentType, targetUrl, isPptx, pptxFileName } = resolvePreviewTarget();
+    const { contentType, targetUrl, originalFileUrl, originalFileName, isPptx, pptxFileName } = resolvePreviewTarget();
     const titleVal = titleInput.value.trim() || 'Untitled report';
     const descInput = document.getElementById('{{ form.description.id_for_label }}');
     const descVal = descInput ? descInput.value.trim() : '';
 
     previewTitle.textContent = titleVal;
     document.body.style.overflow = 'hidden';
+
+    const previewDownloadBtn = document.getElementById('preview-download-btn');
+    const previewDownloadLabel = document.getElementById('preview-download-label');
+
+    if (previewDownloadBtn) {
+      if (originalFileUrl && (contentType === 'presentation' || contentType === 'pdf')) {
+        previewDownloadBtn.href = originalFileUrl;
+        previewDownloadBtn.download = originalFileName || (contentType === 'presentation' ? 'presentation.pptx' : 'document.pdf');
+        if (previewDownloadLabel) {
+          previewDownloadLabel.textContent = contentType === 'presentation' ? 'Download PPTX' : 'Download PDF';
+        }
+        previewDownloadBtn.classList.remove('hidden');
+      } else {
+        previewDownloadBtn.classList.add('hidden');
+      }
+    }
 
     if (previewPlayBtn) {
       previewPlayBtn.classList.toggle('hidden', contentType !== 'presentation');

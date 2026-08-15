@@ -27,7 +27,7 @@ class UserForm(forms.Form):
     )
     photo = forms.ImageField(required=False)
     organizations = forms.ModelMultipleChoiceField(
-        queryset=Organization.objects.all(), required=True,
+        queryset=Organization.objects.all(), required=False,
         widget=forms.SelectMultiple(attrs={'class': 'hidden'})
     )
     role = forms.ModelChoiceField(

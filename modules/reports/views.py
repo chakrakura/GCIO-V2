@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -155,6 +156,34 @@ def _pill_context(report, user):
     }
 
 
+import os
+import zipfile
+import pypdf
+
+
+def _detect_file_page_count(file_obj):
+    if not file_obj:
+        return None
+    name = getattr(file_obj, 'name', '') or str(file_obj)
+    name = name.lower()
+    try:
+        if name.endswith('.pdf'):
+            if hasattr(file_obj, 'path') and os.path.exists(file_obj.path):
+                return len(pypdf.PdfReader(file_obj.path).pages)
+            elif hasattr(file_obj, 'file'):
+                file_obj.seek(0)
+                return len(pypdf.PdfReader(file_obj).pages)
+        elif name.endswith('.pptx') or name.endswith('.ppt'):
+            target = file_obj.path if hasattr(file_obj, 'path') and os.path.exists(file_obj.path) else file_obj
+            with zipfile.ZipFile(target) as z:
+                slides = [f for f in z.namelist() if f.startswith('ppt/slides/slide') and f.endswith('.xml')]
+                if slides:
+                    return len(slides)
+    except Exception:
+        pass
+    return None
+
+
 @permission_required('can_manage_content')
 def report_add(request):
     if request.method == 'POST':
@@ -165,23 +194,43 @@ def report_add(request):
                 report.author = request.user
             if report.status == Report.STATUS_PUBLISHED:
                 report.published_at = timezone.now()
+            if report.file_upload:
+                detected = _detect_file_page_count(report.file_upload)
+                if detected:
+                    report.page_count = detected
             report.save()
             form.save_m2m()
             log_activity(request, 'created report', report.title)
             messages.success(request, f'"{report.title}" was created.')
             return redirect('report_list')
     else:
-        form = ReportForm(initial={'status': Report.STATUS_DRAFT, 'author': request.user}, user=request.user)
+        form = ReportForm(initial={'status': Report.STATUS_DRAFT}, user=request.user)
 
     context = {
         'active_nav': 'reports',
         'form': form,
         'is_edit': False,
         'providers': provider_status(),
-        'selected_author_id': request.user.id,
+        'selected_author_id': None,
     }
     context.update(_pill_context(None, request.user))
     return render(request, 'reports/report_form.html', context)
+
+
+from modules.client_portal.views import _pptx_preview_pdf_path
+
+
+def _get_preview_pdf_url(report):
+    if not report or not report.file_upload:
+        return None
+    file_name = report.file_upload.name.lower()
+    if file_name.endswith('.pdf'):
+        return report.file_upload.url
+    elif file_name.endswith('.pptx') or file_name.endswith('.ppt'):
+        pdf_path = _pptx_preview_pdf_path(report)
+        if pdf_path:
+            return f'{settings.MEDIA_URL}reports/converted/{pdf_path.name}'
+    return None
 
 
 @permission_required('can_manage_content')
@@ -195,6 +244,10 @@ def report_edit(request, report_id):
             report = form.save(commit=False)
             if report.status == Report.STATUS_PUBLISHED and not was_published:
                 report.published_at = timezone.now()
+            if report.file_upload:
+                detected = _detect_file_page_count(report.file_upload)
+                if detected:
+                    report.page_count = detected
             report.save()
             form.save_m2m()
             log_activity(request, 'updated report', report.title)
@@ -210,6 +263,7 @@ def report_edit(request, report_id):
         'report': report,
         'providers': provider_status(),
         'selected_author_id': report.author_id,
+        'preview_pdf_url': _get_preview_pdf_url(report),
     }
     context.update(_pill_context(report, request.user))
     return render(request, 'reports/report_form.html', context)

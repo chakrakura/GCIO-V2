@@ -1,4 +1,5 @@
 {% extends "console/base.html" %}
+{% load static %}
 
 {% block title %}{% if is_edit %}Edit report{% else %}Create report{% endif %}{% endblock %}
 
@@ -26,7 +27,7 @@
       <span class="font-semibold text-blue-900 dark:text-blue-300">{% if is_edit %}Edit report{% else %}Create report{% endif %}</span>
     </div>
     <div class="flex items-center gap-3">
-      <button type="button" id="preview-btn" class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700">
+      <button type="button" id="preview-btn" class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
         Preview
       </button>
@@ -49,38 +50,50 @@
   <form method="post" enctype="multipart/form-data" id="report-form">
     {% csrf_token %}
 
-    <div class="flex flex-wrap gap-2.5 mb-6">
-      <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-        <input type="radio" name="content_type" value="text" {% if form.content_type.value|default:'text' == 'text' %}checked{% endif %}>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
-        Text article
-      </label>
-      <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-        <input type="radio" name="content_type" value="pdf" {% if form.content_type.value == 'pdf' %}checked{% endif %}>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
-        Upload PDF
-      </label>
-      <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-        <input type="radio" name="content_type" value="presentation" {% if form.content_type.value == 'presentation' %}checked{% endif %}>
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>
-        Upload presentation
-      </label>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+      <div class="flex flex-wrap gap-2.5">
+        <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold cursor-pointer transition-all duration-200 border has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 has-[:checked]:shadow-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/80 shadow-2xs">
+          <input type="radio" name="content_type" value="text" class="hidden" {% if report.content_type == 'text' or not report.content_type %}checked{% endif %}>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+          Text Article
+        </label>
+        <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold cursor-pointer transition-all duration-200 border has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 has-[:checked]:shadow-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/80 shadow-2xs">
+          <input type="radio" name="content_type" value="pdf" class="hidden" {% if report.content_type == 'pdf' %}checked{% endif %}>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          Upload PDF
+        </label>
+        <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold cursor-pointer transition-all duration-200 border has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 has-[:checked]:shadow-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/80 shadow-2xs">
+          <input type="radio" name="content_type" value="presentation" class="hidden" {% if report.content_type == 'presentation' %}checked{% endif %}>
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>
+          Upload Presentation
+        </label>
+      </div>
+
+      <button type="button" id="toggle-ai-btn" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 border border-purple-200/80 dark:border-purple-800/80 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
+        Generate with AI
+      </button>
     </div>
 
     {% if form.non_field_errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mb-4">{{ form.non_field_errors }}</div>{% endif %}
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2 space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="md:col-span-2 space-y-6">
 
-        <div id="ai-card" class="bg-blue-50/60 border border-blue-100 dark:border-blue-800 rounded-xl p-6">
-          <div class="flex items-start gap-3 mb-4">
-            <div class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
+        <div id="ai-card" class="hidden bg-blue-50/60 border border-blue-100 dark:border-blue-800 rounded-xl p-6">
+          <div class="flex items-start justify-between gap-3 mb-4">
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
+              </div>
+              <div>
+                <div class="font-bold text-blue-900 dark:text-blue-300">Generate with AI</div>
+                <div class="text-[13px] text-gray-500 dark:text-gray-400">Draft the article from a topic, then edit before publishing.</div>
+              </div>
             </div>
-            <div>
-              <div class="font-bold text-blue-900 dark:text-blue-300">Generate with AI</div>
-              <div class="text-[13px] text-gray-500 dark:text-gray-400">Draft the article from a topic, then edit before publishing.</div>
-            </div>
+            <button type="button" id="close-ai-btn" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 rounded-lg hover:bg-blue-100/50 dark:hover:bg-gray-700 transition-colors" title="Close AI generator">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
           </div>
 
           <div class="flex flex-wrap items-center gap-2 mb-4">
@@ -131,121 +144,204 @@
           {% endwith %}
         </div>
 
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.title.id_for_label }}">TITLE</label>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-6 sm:p-7 shadow-2xs">
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.title.id_for_label }}">TITLE <span class="text-red-500">*</span></label>
           {{ form.title }}
           {% if form.title.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ form.title.errors }}</div>{% endif %}
 
-          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5 mt-5" for="{{ form.description.id_for_label }}">SUMMARY / DEK</label>
+          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5 mt-5" for="{{ form.description.id_for_label }}">SUMMARY / DEK <span class="text-red-500">*</span></label>
           {{ form.description }}
           <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Shown on cards and at the top of the reading view.</div>
 
-          <div id="article-body-section" class="mt-5">
-            <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">ARTICLE BODY</label>
+          <div id="article-body-section" class="mt-5 {% if report.content_type and report.content_type != 'text' %}hidden{% endif %}">
+            <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">ARTICLE BODY <span class="text-red-500">*</span></label>
             <div id="editor"></div>
             {{ form.body }}
           </div>
 
-          <div id="file-upload-section" class="mt-5 hidden">
-            <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">FILE</label>
-            {{ form.file_upload }}
-            {% if report.file_upload %}<div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5">Current file: <a class="text-blue-700 dark:text-blue-400 hover:underline" href="{{ report.file_upload.url }}">{{ report.file_upload.name }}</a></div>{% endif %}
+          <div id="file-upload-section" class="mt-5 {% if not report.content_type or report.content_type == 'text' %}hidden{% endif %}">
+            <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">FILE <span class="text-red-500">*</span></label>
+            
+            <div class="hidden">
+              {{ form.file_upload }}
+            </div>
+
+            <!-- Custom Drag & Drop Dropzone -->
+            <div id="file-dropzone" class="border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-blue-600 dark:hover:border-blue-400 rounded-xl p-6 text-center cursor-pointer transition-all duration-200 bg-gray-50/50 dark:bg-gray-900/30 group">
+              <div class="w-12 h-12 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                <span class="text-blue-900 dark:text-blue-400 underline decoration-blue-300 dark:decoration-blue-600 underline-offset-2">Click to upload</span> or drag and drop
+              </div>
+              <div id="file-restriction-hint" class="text-xs text-gray-500 dark:text-gray-400">PDF documents only (.pdf)</div>
+            </div>
+
+            <!-- Custom Selected File Card -->
+            <div id="file-selected-card" class="hidden p-4 rounded-xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 flex items-center justify-between gap-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <div id="file-selected-icon" class="w-10 h-10 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 flex items-center justify-center shrink-0 font-bold text-xs uppercase">
+                  PDF
+                </div>
+                <div class="min-w-0">
+                  <div id="file-selected-name" class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate"></div>
+                  <div id="file-selected-size" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Attached file</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0">
+                <button type="button" id="file-change-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Change file
+                </button>
+              </div>
+            </div>
+
+            <!-- File type validation error message -->
+            <div id="file-type-error" class="hidden text-xs text-red-600 dark:text-red-400 font-medium mt-2.5 flex items-center gap-1.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 p-2.5 rounded-lg">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+              <span id="file-type-error-msg"></span>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="space-y-6">
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-          <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-4">PUBLISHING</div>
+      <!-- Right Column (Sidebar Master Panel) -->
+      <div class="space-y-5">
+        <!-- Master Card 1: Settings & Taxonomy -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-6 sm:p-7 shadow-2xs space-y-5">
+          <!-- Section 1: Publishing -->
+          <div>
+            <div class="text-[11px] tracking-wider font-bold text-blue-900 dark:text-blue-300 uppercase mb-4 flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+              Publishing
+            </div>
 
-          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.status.id_for_label }}">STATUS</label>
-          {{ form.status }}
+            <div class="space-y-4">
+              <div>
+                <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.status.id_for_label }}">STATUS <span class="text-red-500">*</span></label>
+                {{ form.status }}
+              </div>
 
-          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5 mt-4" for="{{ form.access_level.id_for_label }}">ACCESS LEVEL</label>
-          {{ form.access_level }}
-          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 mb-3">Who can see this report.</div>
+              <div>
+                <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.access_level.id_for_label }}">ACCESS LEVEL <span class="text-red-500">*</span></label>
+                {{ form.access_level }}
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Who can see this report.</div>
 
-          <div id="org-pills" class="mb-1 {% if form.access_level.value|default:'all' == 'all' %}hidden{% endif %}">
-            <div class="relative" id="report-org-combobox">
-              <div id="report-org-pills" class="flex flex-wrap gap-1.5 mb-2 empty:mb-0"></div>
-              <input type="text" id="report-org-search" autocomplete="off" placeholder="Search organisations..."
-                class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
-              <div id="report-org-options" class="hidden absolute z-10 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg"></div>
-              <select name="visible_organizations" id="id_visible_organizations" multiple class="hidden">
-                {% for org in org_options %}
-                  <option value="{{ org.id }}" {% if org.id in selected_orgs %}selected{% endif %}>{{ org.name }}</option>
-                {% endfor %}
-              </select>
+                <div id="org-pills" class="mt-2 {% if form.access_level.value|default:'all' == 'all' %}hidden{% endif %}">
+                  <div class="relative" id="report-org-combobox">
+                    <div id="report-org-pills" class="flex flex-wrap gap-1.5 mb-2 empty:mb-0"></div>
+                    <input type="text" id="report-org-search" autocomplete="off" placeholder="Search organisations..."
+                      class="w-full px-3.5 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-gray-100 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+                    <div id="report-org-options" class="hidden absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg"></div>
+                    <select name="visible_organizations" id="id_visible_organizations" multiple class="hidden">
+                      {% for org in org_options %}
+                        <option value="{{ org.id }}" {% if org.id in selected_orgs %}selected{% endif %}>{{ org.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.publication_type.id_for_label }}">PUBLICATION TYPE <span class="text-red-500">*</span></label>
+                {{ form.publication_type }}
+              </div>
+
+              <div>
+                <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.page_count.id_for_label }}">PAGES <span class="text-red-500">*</span></label>
+                {{ form.page_count }}
+              </div>
+
+              <label class="flex items-center gap-2.5 pt-1 cursor-pointer" for="{{ form.is_featured.id_for_label }}">
+                {{ form.is_featured }}
+                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Feature on client home page</span>
+              </label>
             </div>
           </div>
 
-          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5 mt-4" for="{{ form.publication_type.id_for_label }}">PUBLICATION TYPE</label>
-          {{ form.publication_type }}
+          <!-- Section 2: Author -->
+          <div class="border-t border-gray-100 dark:border-gray-700/60 pt-5">
+            <label class="block text-[11px] tracking-wider font-bold text-blue-900 dark:text-blue-300 uppercase mb-2" for="{{ form.author.id_for_label }}">AUTHOR <span class="text-red-500">*</span></label>
+            {{ form.author }}
+          </div>
 
-          <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5 mt-4" for="{{ form.page_count.id_for_label }}">PAGES</label>
-          {{ form.page_count }}
+          <!-- Section 3: Classification -->
+          <div class="border-t border-gray-100 dark:border-gray-700/60 pt-5 space-y-4">
+            <div class="text-[11px] tracking-wider font-bold text-blue-900 dark:text-blue-300 uppercase flex items-center gap-2">
+              <svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 9h16M4 15h16M10 3v18"/></svg>
+              Classification
+            </div>
 
-          <label class="flex items-center gap-2.5 mt-4 cursor-pointer" for="{{ form.is_featured.id_for_label }}">
-            {{ form.is_featured }}
-            <span class="text-sm text-gray-700 dark:text-gray-300">Feature on client home page</span>
-          </label>
+            <!-- Asset Class -->
+            <div>
+              <label class="block text-[10.5px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">ASSET CLASS</label>
+              <div id="asset-class-combobox" class="relative">
+                <div id="asset-class-pills" class="flex flex-wrap gap-1.5 mb-2 empty:mb-0"></div>
+                <div class="relative">
+                  <input type="text" id="asset-class-search" placeholder="Search asset classes..." autocomplete="off"
+                    class="w-full pl-8 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-gray-100 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+                  <svg class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </div>
+                <div id="asset-class-options" class="hidden absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl"></div>
+                <div id="asset-class-checkboxes" class="hidden">
+                  {% for opt in asset_class_options %}
+                  <input type="checkbox" name="asset_classes" value="{{ opt.id }}" data-name="{{ opt.name }}" {% if opt.id in selected_asset_classes %}checked{% endif %}>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
 
-          <div class="border-t border-gray-100 dark:border-gray-700 mt-5 pt-5 flex flex-col gap-2.5">
-            <button type="button" class="btn-publish w-full inline-flex items-center justify-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold">
-              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-              Publish
-            </button>
-            <button type="button" class="btn-save-draft w-full inline-flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700">
+            <!-- Region -->
+            <div>
+              <label class="block text-[10.5px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">REGION</label>
+              <div id="region-combobox" class="relative">
+                <div id="region-pills" class="flex flex-wrap gap-1.5 mb-2 empty:mb-0"></div>
+                <div class="relative">
+                  <input type="text" id="region-search" placeholder="Search regions & countries..." autocomplete="off"
+                    class="w-full pl-8 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-gray-100 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+                  <svg class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </div>
+                <div id="region-options" class="hidden absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl"></div>
+                <div id="region-checkboxes" class="hidden">
+                  {% for opt in country_region_options %}
+                  <input type="checkbox" name="countries_regions" value="{{ opt.id }}" data-name="{{ opt.name }}" {% if opt.id in selected_countries_regions %}checked{% endif %}>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+
+            <!-- Report Tags -->
+            <div>
+              <label class="block text-[10.5px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">REPORT TAGS</label>
+              <div id="tag-combobox" class="relative">
+                <div id="tag-pills" class="flex flex-wrap gap-1.5 mb-2 empty:mb-0"></div>
+                <div class="relative">
+                  <input type="text" id="tag-search" placeholder="Search report tags..." autocomplete="off"
+                    class="w-full pl-8 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-gray-100 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+                  <svg class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </div>
+                <div id="tag-options" class="hidden absolute z-20 mt-1 w-full max-h-48 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl"></div>
+                <div id="tag-checkboxes" class="hidden">
+                  {% for opt in tag_options %}
+                  <input type="checkbox" name="tags" value="{{ opt.id }}" data-name="{{ opt.name }}" {% if opt.id in selected_tags %}checked{% endif %}>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Master Card 2: Actions Block -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-5 shadow-2xs">
+          <div class="flex flex-col gap-3">
+            <button type="button" class="btn-save-draft w-full h-11 inline-flex items-center justify-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-xl px-4 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-all cursor-pointer">
               <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
               Save as draft
             </button>
-          </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-          <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-4">AUTHORS</div>
-          <div class="flex flex-wrap gap-2">
-            {% for author in author_options %}
-            <label class="pill-option inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[12.5px] font-medium border cursor-pointer has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/40 has-[:checked]:text-blue-800 dark:has-[:checked]:text-blue-300 has-[:checked]:border-blue-200 dark:has-[:checked]:border-blue-700 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800">
-              <input type="radio" name="author" value="{{ author.id }}" {% if author.id == selected_author_id %}checked{% endif %}>
-              <svg class="w-3 h-3 hidden [.pill-option:has(:checked)_&]:inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg>
-              {{ author.get_full_name|default:author.username }}
-            </label>
-            {% endfor %}
-          </div>
-        </div>
-
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-          <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-4">CLASSIFICATION</div>
-
-          <div class="text-[10.5px] tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-2">ASSET CLASS</div>
-          <div class="flex flex-wrap gap-2 mb-4">
-            {% for opt in asset_class_options %}
-            <label class="pill-option inline-flex items-center px-3 py-1.5 rounded-full text-[12.5px] font-medium border cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800">
-              <input type="checkbox" name="asset_classes" value="{{ opt.id }}" {% if opt.id in selected_asset_classes %}checked{% endif %}>
-              {{ opt.name }}
-            </label>
-            {% endfor %}
-          </div>
-
-          <div class="text-[10.5px] tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-2">REGION</div>
-          <div class="flex flex-wrap gap-2 mb-4">
-            {% for opt in country_region_options %}
-            <label class="pill-option inline-flex items-center px-3 py-1.5 rounded-full text-[12.5px] font-medium border cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800">
-              <input type="checkbox" name="countries_regions" value="{{ opt.id }}" {% if opt.id in selected_countries_regions %}checked{% endif %}>
-              {{ opt.name }}
-            </label>
-            {% endfor %}
-          </div>
-
-          <div class="text-[10.5px] tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-2">REPORT TAGS</div>
-          <div class="flex flex-wrap gap-2">
-            {% for opt in tag_options %}
-            <label class="pill-option inline-flex items-center px-3 py-1.5 rounded-full text-[12.5px] font-medium border cursor-pointer has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800">
-              <input type="checkbox" name="tags" value="{{ opt.id }}" {% if opt.id in selected_tags %}checked{% endif %}>
-              {{ opt.name }}
-            </label>
-            {% endfor %}
+            <button type="button" class="btn-publish w-full h-11 inline-flex items-center justify-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl px-5 text-sm font-bold transition-all cursor-pointer shadow-md">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>
+              Publish Report
+            </button>
           </div>
         </div>
       </div>
@@ -253,19 +349,42 @@
   </form>
 
   <!-- Preview modal -->
-  <div id="preview-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-    <div class="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-8">
-      <button type="button" id="preview-close" class="float-right text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200">
-        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-      <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">PREVIEW</div>
-      <h2 id="preview-title" class="font-serif font-bold text-2xl text-blue-900 dark:text-blue-300 mb-4"></h2>
-      <div id="preview-body" class="prose text-sm text-gray-700 dark:text-gray-300"></div>
+  <div id="preview-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 sm:p-6">
+    <div id="preview-panel" class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl h-[88vh] flex flex-col overflow-hidden border border-gray-200/50 dark:border-gray-700">
+      <div class="flex items-center justify-between px-6 py-3.5 border-b border-gray-200 dark:border-gray-700 shrink-0 bg-white dark:bg-gray-800">
+        <h2 id="preview-title" class="font-serif font-bold text-xl text-gray-900 dark:text-gray-100 truncate"></h2>
+        <div class="flex items-center gap-2">
+          <button type="button" id="preview-play-btn" class="hidden w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" title="Play fullscreen presentation">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+          </button>
+          <button type="button" id="preview-close" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer" aria-label="Close preview">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="preview-body" class="flex-1 w-full h-full overflow-hidden bg-gray-900"></div>
+
+      <!-- Presentation Play Mode stage -->
+      <div id="preview-play-stage" class="hidden absolute inset-0 bg-black flex items-center justify-center z-10 overflow-hidden">
+        <canvas id="preview-play-canvas" class="max-w-full max-h-full object-contain"></canvas>
+      </div>
+
+      <div id="preview-play-controls" class="hidden absolute inset-x-0 bottom-6 items-center justify-center gap-4 pointer-events-none z-20">
+        <button type="button" id="preview-play-prev" class="pointer-events-auto w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer shadow-lg" aria-label="Previous slide">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div id="preview-play-indicator" class="pointer-events-none bg-white/15 backdrop-blur-md text-white text-[12.5px] font-semibold px-3.5 py-1.5 rounded-full shadow-lg">1 / 1</div>
+        <button type="button" id="preview-play-next" class="pointer-events-auto w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 text-white flex items-center justify-center cursor-pointer shadow-lg" aria-label="Next slide">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 {% endblock %}
 
 {% block extra_scripts %}
+<script src="{% static 'client_portal/vendor/pdfjs/pdf.min.js' %}"></script>
+<script>if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = "{% static 'client_portal/vendor/pdfjs/pdf.worker.min.js' %}";</script>
 <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
 <script>
   const bodyInput = document.getElementById('body-input');
@@ -289,13 +408,87 @@
   const form = document.getElementById('report-form');
   const statusInput = document.getElementById('{{ form.status.id_for_label }}');
   const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+  const existingFileUrl = {% if report.file_upload %}"{{ report.file_upload.url }}"{% else %}null{% endif %};
+  const previewPdfUrl = {% if preview_pdf_url %}"{{ preview_pdf_url }}"{% else %}null{% endif %};
 
-  form.addEventListener('submit', () => {
+  function validateForm() {
+    const checkedRadio = document.querySelector('input[name="content_type"]:checked');
+    const val = checkedRadio ? checkedRadio.value : 'text';
+
+    if (!titleInput.value.trim()) {
+      alert('Please fill out the Title field.');
+      titleInput.focus();
+      return false;
+    }
+    const descInput = document.getElementById('{{ form.description.id_for_label }}');
+    if (!descInput.value.trim()) {
+      alert('Please fill out the Summary / DEK field.');
+      descInput.focus();
+      return false;
+    }
+    if (val === 'text') {
+      const textContent = quill.getText().trim();
+      if (!textContent) {
+        alert('Please fill out the Article Body content.');
+        quill.focus();
+        return false;
+      }
+    } else if (val === 'pdf') {
+      let fileName = '';
+      if (realFileInput && realFileInput.files && realFileInput.files[0]) {
+        fileName = realFileInput.files[0].name;
+      } else if (existingFileUrl) {
+        const rawName = {% if report.file_upload %}"{{ report.file_upload.name }}"{% else %}""{% endif %};
+        fileName = rawName.split('/').pop().split('\\').pop();
+      }
+      if (!fileName) {
+        alert('Please choose a PDF file (.pdf) to upload.');
+        if (realFileInput) realFileInput.click();
+        return false;
+      }
+      if (!fileName.toLowerCase().endsWith('.pdf')) {
+        alert('Invalid file format. Upload PDF tab requires a .pdf file.');
+        return false;
+      }
+    } else if (val === 'presentation') {
+      let fileName = '';
+      if (realFileInput && realFileInput.files && realFileInput.files[0]) {
+        fileName = realFileInput.files[0].name;
+      } else if (existingFileUrl) {
+        const rawName = {% if report.file_upload %}"{{ report.file_upload.name }}"{% else %}""{% endif %};
+        fileName = rawName.split('/').pop().split('\\').pop();
+      }
+      if (!fileName) {
+        alert('Please choose a Presentation file (.pptx or .ppt) to upload.');
+        if (realFileInput) realFileInput.click();
+        return false;
+      }
+      const lower = fileName.toLowerCase();
+      if (!lower.endsWith('.pptx') && !lower.endsWith('.ppt')) {
+        alert('Invalid file format. Upload presentation tab requires a .pptx or .ppt file.');
+        return false;
+      }
+    }
+    const pubTypeSelect = document.getElementById('{{ form.publication_type.id_for_label }}');
+    if (pubTypeSelect && !pubTypeSelect.value) {
+      alert('Please select a Publication Type.');
+      pubTypeSelect.focus();
+      return false;
+    }
+    return true;
+  }
+
+  form.addEventListener('submit', (e) => {
+    if (!validateForm()) {
+      e.preventDefault();
+      return false;
+    }
     bodyInput.value = quill.root.innerHTML;
   });
 
   document.querySelectorAll('.btn-publish').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (!validateForm()) return;
       statusInput.value = 'published';
       bodyInput.value = quill.root.innerHTML;
       form.requestSubmit();
@@ -303,26 +496,249 @@
   });
   document.querySelectorAll('.btn-save-draft').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (!validateForm()) return;
       statusInput.value = 'draft';
       bodyInput.value = quill.root.innerHTML;
       form.requestSubmit();
     });
   });
 
-  // Content type tabs
+  // Content type tabs & AI generator toggle
   const articleSection = document.getElementById('article-body-section');
   const fileSection = document.getElementById('file-upload-section');
   const aiCard = document.getElementById('ai-card');
-  document.querySelectorAll('input[name="content_type"]').forEach((radio) => {
-    radio.addEventListener('change', () => {
-      const isText = radio.value === 'text';
-      if (radio.checked) {
-        articleSection.classList.toggle('hidden', !isText);
-        fileSection.classList.toggle('hidden', isText);
-        aiCard.classList.toggle('hidden', !isText);
+  const toggleAiBtn = document.getElementById('toggle-ai-btn');
+  const closeAiBtn = document.getElementById('close-ai-btn');
+
+  // Custom File Dropzone & Card UI handling
+  const realFileInput = document.getElementById('{{ form.file_upload.id_for_label }}');
+  const fileDropzone = document.getElementById('file-dropzone');
+  const fileSelectedCard = document.getElementById('file-selected-card');
+  const fileSelectedName = document.getElementById('file-selected-name');
+  const fileSelectedSize = document.getElementById('file-selected-size');
+  const fileSelectedIcon = document.getElementById('file-selected-icon');
+  const fileChangeBtn = document.getElementById('file-change-btn');
+  const fileRestrictionHint = document.getElementById('file-restriction-hint');
+  const fileTypeError = document.getElementById('file-type-error');
+  const fileTypeErrorMsg = document.getElementById('file-type-error-msg');
+
+  function syncFileUI() {
+    const checkedRadio = document.querySelector('input[name="content_type"]:checked');
+    const val = checkedRadio ? checkedRadio.value : 'text';
+
+    if (fileTypeError) fileTypeError.classList.add('hidden');
+
+    if (val === 'pdf') {
+      if (realFileInput) realFileInput.accept = '.pdf,application/pdf';
+      if (fileRestrictionHint) fileRestrictionHint.textContent = 'PDF documents only (.pdf)';
+    } else if (val === 'presentation') {
+      if (realFileInput) realFileInput.accept = '.pptx,.ppt,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-powerpoint';
+      if (fileRestrictionHint) fileRestrictionHint.textContent = 'Presentation files only (.pptx, .ppt)';
+    }
+
+    let hasFile = false;
+    let fileName = '';
+    let fileSizeStr = '';
+    let isPdfIcon = (val === 'pdf');
+    let isMismatch = false;
+
+    if (realFileInput && realFileInput.files && realFileInput.files[0]) {
+      const f = realFileInput.files[0];
+      fileName = f.name;
+      const lower = fileName.toLowerCase();
+      const sizeMb = (f.size / (1024 * 1024)).toFixed(2);
+      fileSizeStr = `${sizeMb} MB`;
+      isPdfIcon = lower.endsWith('.pdf');
+
+      if (val === 'pdf' && !lower.endsWith('.pdf')) {
+        isMismatch = true;
+      } else if (val === 'presentation' && !(lower.endsWith('.pptx') || lower.endsWith('.ppt'))) {
+        isMismatch = true;
+      } else {
+        hasFile = true;
+      }
+    } else if (existingFileUrl) {
+      const rawName = "{{ report.file_upload.name|default:'' }}";
+      fileName = rawName.split('/').pop().split('\\').pop();
+      const lower = fileName.toLowerCase();
+      fileSizeStr = 'Current file uploaded';
+      isPdfIcon = lower.endsWith('.pdf');
+
+      if (val === 'pdf' && !lower.endsWith('.pdf')) {
+        isMismatch = true;
+      } else if (val === 'presentation' && !(lower.endsWith('.pptx') || lower.endsWith('.ppt'))) {
+        isMismatch = true;
+      } else {
+        hasFile = true;
+      }
+    }
+
+    if (isMismatch) {
+      if (realFileInput && realFileInput.files && realFileInput.files[0]) {
+        realFileInput.value = '';
+      }
+      hasFile = false;
+      if (fileTypeErrorMsg) {
+        fileTypeErrorMsg.textContent = val === 'pdf' 
+          ? 'Selected file is not a PDF. Please upload a .pdf file for PDF reports.' 
+          : 'Selected file is not a Presentation. Please upload a .pptx or .ppt file for Presentation reports.';
+      }
+      if (fileTypeError) fileTypeError.classList.remove('hidden');
+    }
+
+    if (hasFile) {
+      if (fileDropzone) fileDropzone.classList.add('hidden');
+      if (fileSelectedCard) fileSelectedCard.classList.remove('hidden');
+      if (fileSelectedName) fileSelectedName.textContent = fileName;
+      if (fileSelectedSize) fileSelectedSize.textContent = fileSizeStr;
+      if (fileSelectedIcon) {
+        fileSelectedIcon.textContent = isPdfIcon ? 'PDF' : 'PPTX';
+        if (isPdfIcon) {
+          fileSelectedIcon.className = 'w-10 h-10 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 flex items-center justify-center shrink-0 font-bold text-xs uppercase';
+        } else {
+          fileSelectedIcon.className = 'w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0 font-bold text-xs uppercase';
+        }
+      }
+    } else {
+      if (fileDropzone) fileDropzone.classList.remove('hidden');
+      if (fileSelectedCard) fileSelectedCard.classList.add('hidden');
+    }
+  }
+
+  if (fileDropzone && realFileInput) {
+    fileDropzone.addEventListener('click', () => realFileInput.click());
+    fileDropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      fileDropzone.classList.add('border-blue-600', 'bg-blue-50/50');
+    });
+    fileDropzone.addEventListener('dragleave', () => {
+      fileDropzone.classList.remove('border-blue-600', 'bg-blue-50/50');
+    });
+    fileDropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      fileDropzone.classList.remove('border-blue-600', 'bg-blue-50/50');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+        realFileInput.files = e.dataTransfer.files;
+        realFileInput.dispatchEvent(new Event('change'));
       }
     });
+  }
+
+  if (fileChangeBtn && realFileInput) {
+    fileChangeBtn.addEventListener('click', () => realFileInput.click());
+  }
+
+  if (realFileInput) {
+    realFileInput.addEventListener('change', () => {
+      if (fileTypeError) fileTypeError.classList.add('hidden');
+      const checkedRadio = document.querySelector('input[name="content_type"]:checked');
+      const val = checkedRadio ? checkedRadio.value : 'text';
+
+      if (realFileInput.files && realFileInput.files[0]) {
+        const f = realFileInput.files[0];
+        const fname = f.name.toLowerCase();
+
+        if (val === 'pdf' && !fname.endsWith('.pdf')) {
+          if (fileTypeErrorMsg) fileTypeErrorMsg.textContent = 'Invalid file type. Upload PDF tab allows ONLY .pdf files.';
+          if (fileTypeError) fileTypeError.classList.remove('hidden');
+          realFileInput.value = '';
+          syncFileUI();
+          return;
+        }
+
+        if (val === 'presentation' && !(fname.endsWith('.pptx') || fname.endsWith('.ppt'))) {
+          if (fileTypeErrorMsg) fileTypeErrorMsg.textContent = 'Invalid file type. Upload presentation tab allows ONLY .pptx or .ppt files.';
+          if (fileTypeError) fileTypeError.classList.remove('hidden');
+          realFileInput.value = '';
+          syncFileUI();
+          return;
+        }
+
+        autoDetectFilePageCount(f);
+      }
+      syncFileUI();
+    });
+  }
+
+  async function autoDetectFilePageCount(file) {
+    if (!file || !pageCountInput) return;
+    const name = file.name.toLowerCase();
+
+    if (name.endsWith('.pdf')) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        if (window.pdfjsLib) {
+          const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+          if (pdf && pdf.numPages) {
+            pageCountInput.value = pdf.numPages;
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('PDF page count auto-detect warning:', err);
+      }
+    }
+
+    if (name.endsWith('.pptx') || name.endsWith('.ppt')) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const text = new TextDecoder('latin1').decode(arrayBuffer);
+        const matches = text.match(/ppt\/slides\/slide\d+\.xml/g);
+        if (matches && matches.length) {
+          const uniqueSlides = new Set(matches);
+          pageCountInput.value = uniqueSlides.size;
+          return;
+        }
+      } catch (err) {
+        console.warn('PPTX slide count auto-detect warning:', err);
+      }
+    }
+  }
+
+  function updateContentTypeUI() {
+    const checkedRadio = document.querySelector('input[name="content_type"]:checked');
+    const val = checkedRadio ? checkedRadio.value : 'text';
+    const isText = val === 'text';
+
+    articleSection.classList.toggle('hidden', !isText);
+    fileSection.classList.toggle('hidden', isText);
+    if (toggleAiBtn) {
+      toggleAiBtn.classList.toggle('hidden', !isText);
+    }
+    if (!isText && aiCard) {
+      aiCard.classList.add('hidden');
+    }
+
+    syncFileUI();
+  }
+
+  if (toggleAiBtn && aiCard) {
+    toggleAiBtn.addEventListener('click', () => {
+      const isHidden = aiCard.classList.contains('hidden');
+      if (isHidden) {
+        const textRadio = document.querySelector('input[name="content_type"][value="text"]');
+        if (textRadio && !textRadio.checked) {
+          textRadio.checked = true;
+          textRadio.dispatchEvent(new Event('change'));
+        }
+        aiCard.classList.remove('hidden');
+        document.getElementById('ai-prompt')?.focus();
+      } else {
+        aiCard.classList.add('hidden');
+      }
+    });
+  }
+
+  if (closeAiBtn && aiCard) {
+    closeAiBtn.addEventListener('click', () => {
+      aiCard.classList.add('hidden');
+    });
+  }
+
+  document.querySelectorAll('input[name="content_type"]').forEach((radio) => {
+    radio.addEventListener('change', updateContentTypeUI);
   });
+  updateContentTypeUI();
 
   // Access level toggles organisation pills
   const accessSelect = document.getElementById('{{ form.access_level.id_for_label }}');
@@ -405,6 +821,107 @@
 
   initSearchableMultiSelect('report-org-combobox', 'id_visible_organizations', 'report-org-search', 'report-org-options', 'report-org-pills');
 
+  // Searchable multi-select combobox for classification checkboxes
+  function initCheckboxCombobox(wrapperId, searchInputId, panelId, pillsId, checkboxContainerId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    const searchInput = document.getElementById(searchInputId);
+    const panel = document.getElementById(panelId);
+    const pillsBox = document.getElementById(pillsId);
+    const checkboxes = Array.from(document.querySelectorAll(`#${checkboxContainerId} input[type="checkbox"]`));
+
+    function getItems() {
+      return checkboxes.map((cb) => ({
+        id: cb.value,
+        name: cb.dataset.name || cb.value,
+        checked: cb.checked,
+        el: cb,
+      }));
+    }
+
+    function renderPills() {
+      pillsBox.innerHTML = '';
+      getItems().filter(i => i.checked).forEach((i) => {
+        const pill = document.createElement('span');
+        pill.className = 'inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-medium text-[12px] pl-2.5 pr-1.5 py-1 rounded-full border border-blue-200/60 dark:border-blue-700/50';
+        pill.textContent = i.name;
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'w-3.5 h-3.5 flex items-center justify-center rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-600 dark:text-blue-300 transition-colors cursor-pointer';
+        removeBtn.innerHTML = '<svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+        removeBtn.addEventListener('click', () => {
+          i.el.checked = false;
+          i.el.dispatchEvent(new Event('change'));
+          renderPills();
+        });
+        pill.appendChild(removeBtn);
+        pillsBox.appendChild(pill);
+      });
+    }
+
+    function renderOptions(filter) {
+      const q = filter.trim().toLowerCase();
+      const allItems = getItems();
+      const matches = allItems.filter((i) => !i.checked && i.name.toLowerCase().includes(q));
+      panel.innerHTML = '';
+
+      if (allItems.length > 1 && !q) {
+        const hasUnchecked = allItems.some(i => !i.checked);
+        const headerAction = document.createElement('div');
+        headerAction.className = 'px-3.5 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50/60 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 cursor-pointer border-b border-gray-100 dark:border-gray-700/50 flex items-center justify-between transition-colors';
+        headerAction.innerHTML = hasUnchecked 
+          ? '<span class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg>Select All Options</span><span class="text-[10px] text-blue-500 uppercase tracking-wider font-bold">All</span>'
+          : '<span class="flex items-center gap-1.5"><svg class="w-3.5 h-3.5 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>Deselect All</span><span class="text-[10px] text-rose-500 uppercase tracking-wider font-bold">Clear</span>';
+        
+        headerAction.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          checkboxes.forEach((cb) => {
+            cb.checked = hasUnchecked;
+            cb.dispatchEvent(new Event('change'));
+          });
+          renderPills();
+          renderOptions('');
+        });
+        panel.appendChild(headerAction);
+      }
+
+      if (!matches.length) {
+        const empty = document.createElement('div');
+        empty.className = 'px-3.5 py-2 text-xs text-gray-400 dark:text-gray-500';
+        empty.textContent = 'No matches found';
+        panel.appendChild(empty);
+      } else {
+        matches.forEach((i) => {
+          const item = document.createElement('div');
+          item.className = 'px-3.5 py-2 text-xs cursor-pointer text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-center justify-between transition-colors';
+          item.textContent = i.name;
+          item.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            i.el.checked = true;
+            i.el.dispatchEvent(new Event('change'));
+            renderPills();
+            searchInput.value = '';
+            renderOptions('');
+          });
+          panel.appendChild(item);
+        });
+      }
+      panel.classList.remove('hidden');
+    }
+
+    searchInput.addEventListener('focus', () => renderOptions(searchInput.value));
+    searchInput.addEventListener('input', () => renderOptions(searchInput.value));
+    document.addEventListener('click', (e) => {
+      if (!wrapper.contains(e.target)) panel.classList.add('hidden');
+    });
+
+    renderPills();
+  }
+
+  initCheckboxCombobox('asset-class-combobox', 'asset-class-search', 'asset-class-options', 'asset-class-pills', 'asset-class-checkboxes');
+  initCheckboxCombobox('region-combobox', 'region-search', 'region-options', 'region-pills', 'region-checkboxes');
+  initCheckboxCombobox('tag-combobox', 'tag-search', 'tag-options', 'tag-pills', 'tag-checkboxes');
+
   // Report size hint
   const sizeSelect = document.getElementById('report-size');
   const sizeHint = document.getElementById('ai-size-hint');
@@ -459,18 +976,248 @@
     }
   });
 
-  // Preview modal
+  // Preview modal & Play mode presenter
   const previewModal = document.getElementById('preview-modal');
-  document.getElementById('preview-btn').addEventListener('click', () => {
-    document.getElementById('preview-title').textContent = titleInput.value || 'Untitled report';
-    document.getElementById('preview-body').innerHTML = quill.root.innerHTML;
-    previewModal.classList.remove('hidden');
-  });
-  document.getElementById('preview-close').addEventListener('click', () => {
+  const previewPanel = document.getElementById('preview-panel');
+  const previewTitle = document.getElementById('preview-title');
+  const previewBody = document.getElementById('preview-body');
+  const previewPlayBtn = document.getElementById('preview-play-btn');
+  const playBtn = document.getElementById('play-btn');
+  const playStage = document.getElementById('preview-play-stage');
+  const playCanvas = document.getElementById('preview-play-canvas');
+  const playControls = document.getElementById('preview-play-controls');
+  const playPrevBtn = document.getElementById('preview-play-prev');
+  const playNextBtn = document.getElementById('preview-play-next');
+  const playIndicator = document.getElementById('preview-play-indicator');
+  const fileInput = document.getElementById('{{ form.file_upload.id_for_label }}');
+
+  let currentPage = 1;
+  let totalPages = 1;
+  let pdfDoc = null;
+  let inPlayMode = false;
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function requestFullscreen(el) {
+    if (!el) return;
+    const request = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (request) request.call(el);
+  }
+
+  function exitFullscreen() {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+    if (exit && (document.fullscreenElement || document.webkitFullscreenElement)) exit.call(document);
+  }
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  function renderCanvasPage(pageNum) {
+    if (!pdfDoc) return;
+    pdfDoc.getPage(pageNum).then((page) => {
+      const panel = previewPanel || document.getElementById('preview-panel') || document.body;
+      const unscaled = page.getViewport({ scale: 1 });
+      const containerW = panel.clientWidth || window.innerWidth;
+      const containerH = panel.clientHeight || window.innerHeight;
+      const scale = Math.min(
+        (containerW - 32) / unscaled.width,
+        (containerH - 32) / unscaled.height,
+      );
+      const viewport = page.getViewport({ scale });
+      const cvs = document.getElementById('preview-play-canvas');
+      if (cvs) {
+        cvs.width = viewport.width;
+        cvs.height = viewport.height;
+        const ctx = cvs.getContext('2d');
+        page.render({ canvasContext: ctx, viewport });
+      }
+    });
+    if (playIndicator) playIndicator.textContent = pageNum + ' / ' + (totalPages || 1);
+  }
+
+  function goToPage(delta) {
+    const next = currentPage + delta;
+    if (next < 1 || (totalPages && next > totalPages)) return;
+    currentPage = next;
+    renderCanvasPage(currentPage);
+  }
+
+  function enterPlayMode(targetPdfUrl) {
+    inPlayMode = true;
+    const panel = previewPanel || document.getElementById('preview-panel');
+    if (panel) requestFullscreen(panel);
+
+    previewBody.classList.add('hidden');
+    playStage.classList.remove('hidden');
+    playStage.classList.add('flex');
+    playControls.classList.remove('hidden');
+    playControls.classList.add('flex');
+
+    currentPage = 1;
+    if (window.pdfjsLib && targetPdfUrl) {
+      pdfjsLib.getDocument(targetPdfUrl).promise.then((doc) => {
+        pdfDoc = doc;
+        totalPages = doc.numPages;
+        renderCanvasPage(currentPage);
+      }).catch(() => {
+        if (targetPdfUrl) {
+          playStage.innerHTML = `<iframe src="${targetPdfUrl}#toolbar=0&navpanes=0" class="w-full h-full border-0 bg-black"></iframe>`;
+        }
+        if (playIndicator) playIndicator.textContent = '1 / 1';
+      });
+    } else if (targetPdfUrl) {
+      playStage.innerHTML = `<iframe src="${targetPdfUrl}#toolbar=0&navpanes=0" class="w-full h-full border-0 bg-black"></iframe>`;
+    }
+  }
+
+  function exitPlayMode() {
+    inPlayMode = false;
+    exitFullscreen();
+    playStage.classList.add('hidden');
+    playStage.classList.remove('flex');
+    playControls.classList.add('hidden');
+    playControls.classList.remove('flex');
+    playStage.innerHTML = '<canvas id="preview-play-canvas" class="max-w-full max-h-full object-contain"></canvas>';
+    previewBody.classList.remove('hidden');
+  }
+
+  function onFullscreenChange() {
+    if (!isFullscreen() && inPlayMode) {
+      exitPlayMode();
+    }
+  }
+
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+  function closePreviewModal() {
+    exitPlayMode();
     previewModal.classList.add('hidden');
+    previewBody.innerHTML = '';
+    document.body.style.overflow = '';
+  }
+
+  function resolvePreviewTarget() {
+    const checkedRadio = document.querySelector('input[name="content_type"]:checked');
+    const contentType = checkedRadio ? checkedRadio.value : 'text';
+    let targetUrl = null;
+    let isPptx = false;
+    let pptxFileName = '';
+
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+      const file = fileInput.files[0];
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (isPdf) {
+        targetUrl = URL.createObjectURL(file);
+      } else {
+        isPptx = true;
+        pptxFileName = file.name;
+      }
+    }
+
+    if (!targetUrl && previewPdfUrl) {
+      targetUrl = previewPdfUrl;
+      isPptx = false;
+    } else if (!targetUrl && existingFileUrl) {
+      if (existingFileUrl.toLowerCase().endsWith('.pdf')) {
+        targetUrl = existingFileUrl;
+        isPptx = false;
+      } else {
+        isPptx = true;
+        const rawName = {% if report.file_upload %}"{{ report.file_upload.name }}"{% else %}""{% endif %};
+        pptxFileName = rawName.split('/').pop().split('\\').pop();
+      }
+    }
+
+    return { contentType, targetUrl, isPptx, pptxFileName };
+  }
+
+  function openPreviewModal(playMode) {
+    const { contentType, targetUrl, isPptx, pptxFileName } = resolvePreviewTarget();
+    const titleVal = titleInput.value.trim() || 'Untitled report';
+    const descInput = document.getElementById('{{ form.description.id_for_label }}');
+    const descVal = descInput ? descInput.value.trim() : '';
+
+    previewTitle.textContent = titleVal;
+    document.body.style.overflow = 'hidden';
+
+    if (previewPlayBtn) {
+      previewPlayBtn.classList.toggle('hidden', contentType !== 'presentation');
+    }
+
+    if (contentType === 'text') {
+      previewBody.className = "flex-1 w-full overflow-y-auto bg-white dark:bg-gray-800 p-8";
+      previewBody.innerHTML = `
+        <div class="max-w-3xl mx-auto">
+          ${descVal ? `<p class="text-gray-500 dark:text-gray-400 text-base italic mb-6 leading-relaxed">${escapeHtml(descVal)}</p>` : ''}
+          <div class="prose dark:prose-invert max-w-none text-[15px] leading-relaxed text-gray-800 dark:text-gray-200">
+            ${quill.root.innerHTML || '<p class="text-gray-400">No article content written yet.</p>'}
+          </div>
+        </div>
+      `;
+    } else {
+      previewBody.className = "flex-1 w-full overflow-hidden bg-gray-900";
+
+      if (targetUrl) {
+        const viewerUrl = targetUrl.includes('#') ? targetUrl : (targetUrl + '#toolbar=1&navpanes=1');
+        previewBody.innerHTML = `<iframe src="${viewerUrl}" class="w-full h-full border-0 bg-gray-900" title="Report preview"></iframe>`;
+      } else if (isPptx) {
+        previewBody.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-full p-8 text-center bg-gray-900">
+            <div class="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4 border border-amber-500/20">
+              <svg class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>
+            </div>
+            <div class="font-semibold text-lg text-gray-100 mb-1">${escapeHtml(pptxFileName || 'Presentation document')}</div>
+            <div class="text-sm text-gray-400 max-w-md leading-relaxed">Presentation file attached. Save or Publish the report to generate full slide viewer.</div>
+          </div>
+        `;
+      } else {
+        previewBody.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-full p-8 text-center text-gray-400 bg-gray-900">
+            <svg class="w-12 h-12 text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            <div class="font-semibold text-base text-gray-200 mb-1">No file uploaded</div>
+            <div class="text-xs text-gray-400">Upload a ${contentType === 'pdf' ? 'PDF' : 'presentation'} file in the form above to preview it.</div>
+          </div>
+        `;
+      }
+    }
+
+    previewModal.classList.remove('hidden');
+
+    if (playMode && contentType === 'presentation') {
+      enterPlayMode(targetUrl);
+    } else {
+      exitPlayMode();
+    }
+  }
+
+  document.getElementById('preview-btn').addEventListener('click', () => openPreviewModal(false));
+  if (previewPlayBtn) previewPlayBtn.addEventListener('click', () => {
+    const { targetUrl } = resolvePreviewTarget();
+    if (inPlayMode) exitPlayMode(); else enterPlayMode(targetUrl);
   });
+
+  if (playPrevBtn) playPrevBtn.addEventListener('click', () => goToPage(-1));
+  if (playNextBtn) playNextBtn.addEventListener('click', () => goToPage(1));
+
+  document.getElementById('preview-close').addEventListener('click', closePreviewModal);
   previewModal.addEventListener('click', (e) => {
-    if (e.target === previewModal) previewModal.classList.add('hidden');
+    if (e.target === previewModal) closePreviewModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (previewModal.classList.contains('hidden')) return;
+    if (e.key === 'Escape') closePreviewModal();
+    if (inPlayMode && (e.key === 'ArrowRight' || e.key === 'PageDown')) goToPage(1);
+    if (inPlayMode && (e.key === 'ArrowLeft' || e.key === 'PageUp')) goToPage(-1);
+  });
+
+  window.addEventListener('resize', () => {
+    if (inPlayMode && pdfDoc) renderCanvasPage(currentPage);
   });
 </script>
 {% endblock %}

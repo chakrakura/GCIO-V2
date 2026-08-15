@@ -27,17 +27,21 @@ class UserForm(forms.Form):
     )
     photo = forms.ImageField(required=False)
     organizations = forms.ModelMultipleChoiceField(
-        queryset=Organization.objects.all(), required=False,
+        queryset=Organization.objects.all(), required=True,
         widget=forms.SelectMultiple(attrs={'class': 'hidden'})
     )
     role = forms.ModelChoiceField(
-        queryset=Role.objects.all().order_by('name'), empty_label='Select role',
+        queryset=Role.objects.all().order_by('name'), empty_label='Select role', required=True,
         widget=forms.Select(attrs={'class': 'hidden'})
     )
 
     def __init__(self, *args, editing_user=None, **kwargs):
         self.editing_user = editing_user
         super().__init__(*args, **kwargs)
+        if not editing_user:
+            self.fields['password'].required = True
+        else:
+            self.fields['password'].required = False
 
     def clean_email(self):
         email = self.cleaned_data['email'].strip().lower()

@@ -11,6 +11,7 @@ class Profile(models.Model):
     title = models.CharField(max_length=150, blank=True, help_text="Byline title shown on authored reports, e.g. \"Head of Research\".")
     role = models.ForeignKey(Role, on_delete=models.PROTECT, null=True, blank=True, related_name='profiles')
     organizations = models.ManyToManyField(Organization, blank=True, related_name='members')
+    is_author = models.BooleanField(default=True, help_text="Whether this user is featured in the Taxonomy authors list.")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

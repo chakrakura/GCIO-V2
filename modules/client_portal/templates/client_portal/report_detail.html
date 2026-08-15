@@ -39,11 +39,17 @@
     {% if report.content_type == 'text' %}
       <div class="prose dark:prose-invert max-w-none text-[15px] leading-relaxed text-gray-800 dark:text-gray-200">{{ report.body|safe }}</div>
     {% elif preview_pdf_url %}
-      <div class="flex gap-2">
+      <div class="flex items-center gap-2">
         <button type="button" id="view-pdf-btn" data-pdf-url="{{ preview_pdf_url }}" data-pdf-title="{{ report.title }}" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
           View {{ preview_label }}
         </button>
+        {% if report.file_upload %}
+        <a href="{{ report.file_upload.url }}" download class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download {% if preview_label == 'Presentation' %}PPTX{% else %}PDF{% endif %}
+        </a>
+        {% endif %}
       </div>
 
       <div id="pdf-viewer-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 sm:p-8">
@@ -51,6 +57,12 @@
           <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 dark:border-gray-700 shrink-0">
             <div id="pdf-viewer-title" class="text-[14px] font-semibold text-gray-900 dark:text-gray-100 truncate"></div>
             <div class="flex items-center gap-1.5">
+              {% if report.file_upload %}
+              <a href="{{ report.file_upload.url }}" download class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white transition-colors cursor-pointer shadow-2xs mr-1" title="Download original file">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Download {% if preview_label == 'Presentation' %}PPTX{% else %}PDF{% endif %}</span>
+              </a>
+              {% endif %}
               {% if preview_label == 'Presentation' %}
               <button type="button" id="pdf-viewer-play" class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" aria-label="Play fullscreen">
                 <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="6 3 20 12 6 21 6 3"/></svg>

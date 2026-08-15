@@ -10,6 +10,8 @@ from modules.users.activity import log_activity
 
 from .models import AssetClass, CountryRegion, PublicationType, ReportTag
 
+from modules.users.models import Profile
+
 TAB_CONFIG = {
     'authors': {
         'label': 'Authors',
@@ -54,7 +56,7 @@ TAB_CONFIG = {
 
 def _authors_queryset():
     return (
-        User.objects.filter(profile__role__is_internal=True)
+        User.objects.filter(profile__role__is_internal=True, profile__is_author=True)
         .select_related('profile', 'profile__role')
         .annotate(report_count=Count('reports', distinct=True))
         .order_by('first_name', 'last_name')
@@ -82,6 +84,7 @@ def taxonomy_view(request, tab='authors'):
 
     is_authors = tab == 'authors'
     query = request.GET.get('q', '').strip()
+    non_client_users = []
 
     if is_authors:
         items = _authors_queryset()
@@ -89,6 +92,11 @@ def taxonomy_view(request, tab='authors'):
             items = items.filter(
                 Q(first_name__icontains=query) | Q(last_name__icontains=query) | Q(email__icontains=query)
             )
+        non_client_users = (
+            User.objects.filter(profile__role__is_internal=True, profile__is_author=False)
+            .select_related('profile', 'profile__role')
+            .order_by('first_name', 'last_name')
+        )
     else:
         items = TAB_CONFIG[tab]['model'].objects.annotate(report_count=Count('reports', distinct=True))
         if query:
@@ -110,11 +118,25 @@ def taxonomy_view(request, tab='authors'):
         'page_obj': page_obj,
         'base_qs': base_qs,
         'query': query,
+        'non_client_users': non_client_users,
     })
 
 
 @permission_required('can_manage_taxonomy')
 def taxonomy_add(request, tab):
+    if tab == 'authors':
+        if request.method == 'POST':
+            user_ids = request.POST.getlist('author_user_ids')
+            if user_ids:
+                updated = Profile.objects.filter(
+                    user_id__in=user_ids, role__is_internal=True
+                ).update(is_author=True)
+                messages.success(request, f'Successfully added {updated} author(s).')
+                log_activity(request, 'added authors', f'{updated} user(s)')
+            else:
+                messages.error(request, 'Please select at least one user to add as an author.')
+        return redirect('taxonomy_tab', tab='authors')
+
     cfg = TAB_CONFIG.get(tab)
     if not cfg or cfg['model'] is None:
         return redirect('taxonomy_tab', tab='authors')
@@ -167,6 +189,15 @@ def taxonomy_edit(request, tab, term_id):
 
 @permission_required('can_manage_taxonomy')
 def taxonomy_delete(request, tab, term_id):
+    if tab == 'authors' and request.method == 'POST':
+        user = get_object_or_404(User, pk=term_id)
+        if hasattr(user, 'profile'):
+            user.profile.is_author = False
+            user.profile.save()
+            log_activity(request, 'removed author', user.get_full_name() or user.username)
+            messages.success(request, f'Removed author {user.get_full_name() or user.username}.')
+        return redirect('taxonomy_tab', tab='authors')
+
     cfg = TAB_CONFIG.get(tab)
     if cfg and cfg['model'] is not None and request.method == 'POST':
         term = get_object_or_404(cfg['model'], pk=term_id)

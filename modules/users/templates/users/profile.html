@@ -7,34 +7,22 @@
 {% block content %}
   <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">ACCOUNT</div>
   <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">My profile</h1>
-  <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-2xl mb-5">Update your name and photo.</p>
-
-  <div class="flex gap-2 mb-6">
-    <a href="{% url 'profile' %}" class="px-4 py-2 rounded-lg text-sm font-semibold bg-blue-900 text-white">Profile</a>
-    <a href="{% url 'profile_password' %}" class="px-4 py-2 rounded-lg text-sm font-semibold bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">Change password</a>
-  </div>
+  <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-2xl mb-6">Update your account details and profile picture.</p>
 
   <div class="max-w-2xl">
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
-      <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-4">PROFILE</div>
+    <div class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl p-6 sm:p-7 shadow-xs">
+      <div class="text-[11px] tracking-wider font-bold text-blue-900 dark:text-blue-300 uppercase mb-5 flex items-center gap-2">
+        <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Personal Information
+      </div>
+
       <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {% if profile_form.non_field_errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mb-4">{{ profile_form.non_field_errors }}</div>{% endif %}
-
-        <div class="flex items-center gap-4 mb-5">
-          {% if request.user.profile.photo %}
-            <img src="{{ request.user.profile.photo.url }}" alt="{{ request.user.get_full_name }}" class="w-16 h-16 rounded-full object-cover border border-gray-200 dark:border-gray-700 shrink-0">
-          {% else %}
-            <div class="w-16 h-16 rounded-full bg-blue-900 text-white flex items-center justify-center text-xl font-bold shrink-0">
-              {{ request.user.first_name|slice:":1"|default:"?"|upper }}{{ request.user.last_name|slice:":1"|upper }}
-            </div>
-          {% endif %}
-          <div class="flex-1">
-            <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5" for="{{ profile_form.photo.id_for_label }}">Photo</label>
-            {{ profile_form.photo }}
-            {% if profile_form.photo.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ profile_form.photo.errors }}</div>{% endif %}
+        {% if profile_form.non_field_errors %}
+          <div class="p-3 mb-5 text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-xl">
+            {{ profile_form.non_field_errors }}
           </div>
-        </div>
+        {% endif %}
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
           <div>
@@ -45,20 +33,103 @@
           <div>
             <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5" for="{{ profile_form.last_name.id_for_label }}">Last name</label>
             {{ profile_form.last_name }}
+            {% if profile_form.last_name.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ profile_form.last_name.errors }}</div>{% endif %}
           </div>
         </div>
 
-        <div class="mb-5">
+        <div class="mb-6">
           <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Email address</label>
-          <div class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/40 cursor-not-allowed">{{ request.user.email }}</div>
-          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">This is your login email and can't be changed here — contact support to update it.</p>
+          <div class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-500 dark:text-gray-400 bg-gray-50/70 dark:bg-gray-900/40 cursor-not-allowed flex items-center justify-between">
+            <span>{{ request.user.email }}</span>
+            <svg class="w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <p class="text-xs text-gray-400 dark:text-gray-500 mt-1.5">This is your login email and cannot be changed here.</p>
         </div>
 
-        <button type="submit" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-          Save profile
-        </button>
+        <div class="mb-6">
+          <label class="block text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-2">Profile Photo</label>
+          <div class="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-gray-50/70 dark:bg-gray-900/40 border border-gray-200/80 dark:border-gray-700/80">
+            <div id="avatar-preview-container" class="{% if not request.user.profile.photo %}hidden{% endif %} relative shrink-0">
+              <img id="avatar-preview" src="{% if request.user.profile.photo %}{{ request.user.profile.photo.url }}{% endif %}" alt="{{ request.user.get_full_name }}" class="w-20 h-20 rounded-full object-cover border-2 border-white dark:border-gray-800 shadow-md">
+            </div>
+
+            <div class="flex-1 w-full">
+              <div class="hidden">
+                {{ profile_form.photo }}
+              </div>
+              <div id="profile-photo-dropzone" class="border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-blue-600 dark:hover:border-blue-400 rounded-xl p-4 text-center cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800 group">
+                <div class="flex items-center justify-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  <svg class="w-4 h-4 text-blue-900 dark:text-blue-400 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <span><span class="text-blue-900 dark:text-blue-400 underline decoration-blue-300 dark:decoration-blue-600 underline-offset-2">Click to upload</span> or drag and drop</span>
+                </div>
+                <div id="file-name-display" class="text-xs text-gray-500 dark:text-gray-400 mt-1">JPG, PNG, WEBP or GIF (max 5MB)</div>
+              </div>
+              {% if profile_form.photo.errors %}
+                <div class="text-red-700 dark:text-red-400 text-[12.5px] mt-1.5">{{ profile_form.photo.errors }}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-gray-100 dark:border-gray-700/60 flex justify-end">
+          <button type="submit" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl px-5 py-2.5 text-sm font-semibold cursor-pointer shadow-xs hover:shadow-md transition-all duration-200">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+            Save profile
+          </button>
+        </div>
       </form>
     </div>
   </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const photoInput = document.getElementById('{{ profile_form.photo.id_for_label }}');
+  const dropzone = document.getElementById('profile-photo-dropzone');
+  const fileNameDisplay = document.getElementById('file-name-display');
+  const avatarPreview = document.getElementById('avatar-preview');
+  const avatarContainer = document.getElementById('avatar-preview-container');
+
+  if (dropzone && photoInput) {
+    dropzone.addEventListener('click', () => photoInput.click());
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('border-blue-600', 'bg-blue-50/50');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('border-blue-600', 'bg-blue-50/50');
+      });
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+        photoInput.files = e.dataTransfer.files;
+        handleFileChange();
+      }
+    });
+
+    photoInput.addEventListener('change', handleFileChange);
+
+    function handleFileChange() {
+      if (photoInput.files && photoInput.files[0]) {
+        const file = photoInput.files[0];
+        if (fileNameDisplay) fileNameDisplay.textContent = 'Selected: ' + file.name;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (avatarPreview) avatarPreview.src = e.target.result;
+          if (avatarContainer) avatarContainer.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }
+});
+</script>
 {% endblock %}

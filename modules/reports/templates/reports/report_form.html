@@ -223,6 +223,14 @@
               </div>
 
               <div>
+                <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.published_at.id_for_label }}">
+                  PUBLISH DATE <span class="text-xs font-normal text-gray-400 dark:text-gray-500 tracking-normal text-none">(Optional)</span>
+                </label>
+                {{ form.published_at }}
+                <div class="text-[11.5px] text-gray-500 dark:text-gray-400 mt-1">Select publish date</div>
+              </div>
+
+              <div>
                 <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5" for="{{ form.access_level.id_for_label }}">ACCESS LEVEL <span class="text-red-500">*</span></label>
                 {{ form.access_level }}
                 <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Who can see this report.</div>
@@ -412,7 +420,7 @@
   const form = document.getElementById('report-form');
   const statusInput = document.getElementById('{{ form.status.id_for_label }}');
   const titleInput = document.getElementById('{{ form.title.id_for_label }}');
-  const existingFileUrl = "{{ report.file_upload.url|default:'' }}" || null;
+  const existingFileUrl = "{% if report and report.file_upload %}{{ report.file_upload.url }}{% endif %}" || null;
   const previewPdfUrl = "{{ preview_pdf_url|default:'' }}" || null;
 
   function validateForm() {

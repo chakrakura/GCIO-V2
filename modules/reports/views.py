@@ -8,6 +8,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from gcio.pagination import paginate
+from modules.client_portal.views import _dot_color
 from modules.organizations.models import Organization
 from modules.roles.decorators import permission_required
 from modules.taxonomy.models import AssetClass, CountryRegion, PublicationType, ReportTag
@@ -156,6 +157,10 @@ def _pill_context(report, user):
     if selected_orgs:
         org_options = Organization.objects.filter(Q(pk__in=org_options) | Q(pk__in=selected_orgs))
 
+    publication_type_options = PublicationType.objects.filter(is_active=True)
+    for pt in publication_type_options:
+        pt.dot_color = _dot_color(pt)
+
     return {
         'asset_class_options': AssetClass.objects.filter(is_active=True),
         'selected_asset_classes': selected_asset_classes,
@@ -166,12 +171,16 @@ def _pill_context(report, user):
         'org_options': org_options,
         'selected_orgs': selected_orgs,
         'author_options': User.objects.filter(profile__role__is_internal=True).order_by('first_name', 'last_name'),
+        'publication_type_options': publication_type_options,
     }
 
 
 import os
+import uuid
 import zipfile
+
 import pypdf
+from django.core.files.storage import default_storage
 
 
 def _detect_file_page_count(file_obj):
@@ -225,6 +234,7 @@ def report_add(request):
         'is_edit': False,
         'providers': provider_status(),
         'selected_author_id': None,
+        'selected_publication_type_id': None,
     }
     context.update(_pill_context(None, request.user))
     return render(request, 'reports/report_form.html', context)
@@ -276,6 +286,7 @@ def report_edit(request, report_id):
         'report': report,
         'providers': provider_status(),
         'selected_author_id': report.author_id,
+        'selected_publication_type_id': report.publication_type_id,
         'preview_pdf_url': _get_preview_pdf_url(report),
     }
     context.update(_pill_context(report, request.user))
@@ -308,3 +319,25 @@ def generate_ai_draft(request):
         return JsonResponse({'error': f'Gemini request failed: {exc}'}, status=502)
 
     return JsonResponse({'title': title, 'body_html': body_html})
+
+
+ALLOWED_BODY_IMAGE_TYPES = {'image/png', 'image/jpeg', 'image/gif', 'image/webp'}
+MAX_BODY_IMAGE_BYTES = 8 * 1024 * 1024  # 8MB
+
+
+@permission_required('can_manage_content')
+@require_POST
+def upload_body_image(request):
+    """Uploads an image dropped into the article body editor and returns its URL,
+    so Quill can embed a real media file instead of a giant base64 data URI."""
+    image = request.FILES.get('image')
+    if not image:
+        return JsonResponse({'error': 'No image file was sent.'}, status=400)
+    if image.content_type not in ALLOWED_BODY_IMAGE_TYPES:
+        return JsonResponse({'error': 'Unsupported image type. Use PNG, JPEG, GIF, or WEBP.'}, status=400)
+    if image.size > MAX_BODY_IMAGE_BYTES:
+        return JsonResponse({'error': 'Image is too large (8MB max).'}, status=400)
+
+    ext = os.path.splitext(image.name)[1].lower() or '.png'
+    path = default_storage.save(f'reports/body_images/{uuid.uuid4().hex}{ext}', image)
+    return JsonResponse({'url': default_storage.url(path)})

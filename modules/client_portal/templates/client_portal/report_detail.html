@@ -8,6 +8,27 @@
 <link rel="stylesheet" href="{% static 'client_portal/vendor/pptxjs/css/pptxjs.css' %}">
 <link rel="stylesheet" href="{% static 'client_portal/vendor/pptxjs/css/nv.d3.min.css' %}">
 {% endif %}
+<style>
+  /* Matches the editor's "editorial canvas" styling, so what an editor sees
+     while writing (block-heading/block-quote in report_form.html) is what
+     actually gets published here — not a generic prose-plugin default. */
+  .report-body h2, .report-body h3 { font-family: 'Source Serif 4', Charter, Georgia, serif; font-weight: 700; color: #1e3a8a; }
+  .dark .report-body h2, .dark .report-body h3 { color: #93c5fd; }
+  .report-body blockquote {
+    font-family: 'Source Serif 4', Charter, Georgia, serif;
+    font-style: italic;
+    color: #1e3a8a;
+    border-left-color: #1e3a8a;
+  }
+  .dark .report-body blockquote { color: #93c5fd; border-left-color: #93c5fd; }
+
+  /* Renders the "Data point" blocks authored in the report editor. */
+  .stat-block { display: inline-flex; flex-direction: column; gap: 2px; padding: 14px 20px; border: 1px solid #dbeafe; background: #eff6ff; border-radius: 12px; min-width: 160px; margin: 12px 0; }
+  .dark .stat-block { background: rgba(30,58,138,0.15); border-color: rgba(30,58,138,0.4); }
+  .stat-block-value { font-family: 'Source Serif 4', Charter, Georgia, serif; font-weight: 700; font-size: 28px; color: #1e3a8a; }
+  .dark .stat-block-value { color: #93c5fd; }
+  .stat-block-label { font-size: 12px; color: #6b7280; }
+</style>
 {% endblock %}
 
 {% block breadcrumb %}{{ report.publication_type.name|default:"Report" }}{% endblock %}
@@ -37,7 +58,7 @@
     {% endif %}
 
     {% if report.content_type == 'text' %}
-      <div class="prose dark:prose-invert max-w-none text-[15px] leading-relaxed text-gray-800 dark:text-gray-200">{{ report.body|safe }}</div>
+      <div class="report-body prose dark:prose-invert max-w-none text-[15px] leading-relaxed text-gray-800 dark:text-gray-200">{{ report.body|safe }}</div>
     {% elif preview_pdf_url %}
       <div class="flex items-center gap-2">
         <button type="button" id="view-pdf-btn" data-pdf-url="{{ preview_pdf_url }}" data-pdf-title="{{ report.title }}" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">

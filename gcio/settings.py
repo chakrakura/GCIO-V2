@@ -35,6 +35,12 @@ ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', '').split(',
 
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
 
+# Auto-logout (clients and internal/admin users alike) after 2 days of inactivity.
+# SESSION_SAVE_EVERY_REQUEST refreshes the expiry on every request, turning this into a
+# sliding inactivity window rather than a fixed "2 days after login" timer.
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 2
+SESSION_SAVE_EVERY_REQUEST = True
+
 
 # Application definition
 
@@ -65,6 +71,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'gcio.middleware.NoCacheForAuthenticatedMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]

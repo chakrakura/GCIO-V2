@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 
-from gcio.ui import CHECKBOX_CLASS, INPUT_CLASS, SELECT_CLASS, TEXTAREA_CLASS
+from gcio.ui import CHECKBOX_CLASS, INPUT_CLASS
 from modules.organizations.models import Organization
 from modules.taxonomy.models import AssetClass, CountryRegion, PublicationType, ReportTag
 
@@ -11,9 +11,8 @@ from .models import Report
 class ReportForm(forms.ModelForm):
     author = forms.ModelChoiceField(
         queryset=User.objects.filter(profile__role__is_internal=True),
-        required=True,
-        empty_label="Select author...",
-        widget=forms.Select(attrs={'class': SELECT_CLASS, 'required': 'required'}),
+        required=False,
+        widget=forms.RadioSelect,
     )
 
     class Meta:
@@ -25,14 +24,21 @@ class ReportForm(forms.ModelForm):
         ]
         widgets = {
             'content_type': forms.RadioSelect,
-            'title': forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Editorial title...', 'required': 'required'}),
-            'description': forms.Textarea(attrs={'class': TEXTAREA_CLASS, 'rows': 4, 'placeholder': 'One or two sentences summarizing the report...', 'required': 'required'}),
+            'title': forms.TextInput(attrs={
+                'class': 'canvas-title-input w-full font-serif font-bold text-3xl sm:text-4xl text-gray-900 dark:text-gray-100 bg-transparent border-none focus:outline-none focus:ring-0 p-0 placeholder-gray-300 dark:placeholder-gray-600',
+                'placeholder': 'Editorial title',
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'canvas-dek-input w-full italic text-lg text-gray-500 dark:text-gray-400 bg-transparent border-none focus:outline-none focus:ring-0 p-0 resize-none placeholder-gray-300 dark:placeholder-gray-600',
+                'rows': 2,
+                'placeholder': 'One or two sentences summarising the report. Shown on cards and above the article.',
+            }),
             'body': forms.Textarea(attrs={'id': 'body-input', 'class': 'hidden'}),
-            'status': forms.Select(attrs={'class': SELECT_CLASS}),
-            'access_level': forms.Select(attrs={'class': SELECT_CLASS}),
+            'status': forms.Select(attrs={'class': 'hidden'}),
+            'access_level': forms.RadioSelect,
             'visible_organizations': forms.CheckboxSelectMultiple,
-            'publication_type': forms.Select(attrs={'class': SELECT_CLASS, 'required': 'required'}),
-            'page_count': forms.NumberInput(attrs={'class': INPUT_CLASS, 'min': 1, 'required': 'required'}),
+            'publication_type': forms.RadioSelect,
+            'page_count': forms.NumberInput(attrs={'class': INPUT_CLASS, 'min': 1}),
             'is_featured': forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
             'asset_classes': forms.CheckboxSelectMultiple,
             'countries_regions': forms.CheckboxSelectMultiple,
@@ -41,17 +47,15 @@ class ReportForm(forms.ModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['title'].required = True
-        self.fields['description'].required = True
-        self.fields['author'].empty_label = "Select author..."
-        self.fields['author'].required = True
+        self.fields['title'].required = False
+        self.fields['description'].required = False
         self.fields['publication_type'].queryset = PublicationType.objects.filter(is_active=True)
-        self.fields['publication_type'].empty_label = "Select publication type..."
-        self.fields['publication_type'].required = True
+        self.fields['publication_type'].required = False
         self.fields['asset_classes'].queryset = AssetClass.objects.filter(is_active=True)
         self.fields['countries_regions'].queryset = CountryRegion.objects.filter(is_active=True)
         self.fields['tags'].queryset = ReportTag.objects.filter(is_active=True)
         self.fields['file_upload'].required = False
+        self.fields['page_count'].required = False
 
         org_options = Organization.objects.filter(is_active=True)
         role = getattr(user, 'profile', None) and user.profile.role
@@ -62,6 +66,11 @@ class ReportForm(forms.ModelForm):
             allowed_ids = set(user.profile.organizations.values_list('id', flat=True)) | selected_ids
             org_options = org_options.filter(pk__in=allowed_ids)
         self.fields['visible_organizations'].queryset = org_options
+
+    def clean_page_count(self):
+        # page_count is a non-nullable column — fall back to 1 rather than erroring
+        # when the field is left blank (it's no longer a required field).
+        return self.cleaned_data.get('page_count') or 1
 
     def clean(self):
         cleaned_data = super().clean()

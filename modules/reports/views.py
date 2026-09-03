@@ -214,7 +214,7 @@ def report_add(request):
             report = form.save(commit=False)
             if not report.author_id:
                 report.author = request.user
-            if report.status == Report.STATUS_PUBLISHED:
+            if report.status == Report.STATUS_PUBLISHED and not report.published_at:
                 report.published_at = timezone.now()
             if report.file_upload:
                 detected = _detect_file_page_count(report.file_upload)
@@ -263,9 +263,8 @@ def report_edit(request, report_id):
     if request.method == 'POST':
         form = ReportForm(request.POST, request.FILES, instance=report, user=request.user)
         if form.is_valid():
-            was_published = report.published_at is not None
             report = form.save(commit=False)
-            if report.status == Report.STATUS_PUBLISHED and not was_published:
+            if report.status == Report.STATUS_PUBLISHED and not report.published_at:
                 report.published_at = timezone.now()
             if report.file_upload:
                 detected = _detect_file_page_count(report.file_upload)

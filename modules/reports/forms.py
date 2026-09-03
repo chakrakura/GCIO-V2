@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib.auth.models import User
 
+from django.utils import timezone
+
 from gcio.ui import CHECKBOX_CLASS, INPUT_CLASS
 from modules.organizations.models import Organization
 from modules.taxonomy.models import AssetClass, CountryRegion, PublicationType, ReportTag
@@ -14,12 +16,20 @@ class ReportForm(forms.ModelForm):
         required=False,
         widget=forms.RadioSelect,
     )
+    published_at = forms.DateField(
+        required=False,
+        label="Publish Date",
+        widget=forms.DateInput(
+            format='%Y-%m-%d',
+            attrs={'type': 'date', 'class': INPUT_CLASS}
+        )
+    )
 
     class Meta:
         model = Report
         fields = [
             'content_type', 'title', 'description', 'body', 'file_upload',
-            'status', 'access_level', 'visible_organizations', 'publication_type', 'page_count', 'is_featured',
+            'status', 'access_level', 'published_at', 'visible_organizations', 'publication_type', 'page_count', 'is_featured',
             'author', 'asset_classes', 'countries_regions', 'tags',
         ]
         widgets = {
@@ -56,6 +66,11 @@ class ReportForm(forms.ModelForm):
         self.fields['tags'].queryset = ReportTag.objects.filter(is_active=True)
         self.fields['file_upload'].required = False
         self.fields['page_count'].required = False
+
+        if self.instance and self.instance.pk and self.instance.published_at:
+            self.initial['published_at'] = self.instance.published_at.strftime('%Y-%m-%d')
+        elif not self.initial.get('published_at'):
+            self.initial['published_at'] = timezone.now().strftime('%Y-%m-%d')
 
         org_options = Organization.objects.filter(is_active=True)
         role = getattr(user, 'profile', None) and user.profile.role

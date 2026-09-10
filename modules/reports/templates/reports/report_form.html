@@ -19,9 +19,11 @@
   .report-body blockquote { font-family: 'Source Serif 4', Charter, Georgia, serif; font-style: italic; color: #1e3a8a; border-left-color: #1e3a8a; }
   .dark .report-body blockquote { color: #93c5fd; border-left-color: #93c5fd; }
 
-  #block-editor { min-height: 240px; padding-left: 40px; }
-  #id_page_count { width: 3.5rem; text-align: center; padding-left: 0.5rem; padding-right: 0.5rem; }
-  .editor-block { position: relative; padding: 3px 0; }
+  #block-editor { min-height: 200px; overflow: visible; }
+  .editor-block { position: relative; z-index: 1; display: flex; align-items: flex-start; gap: 8px; padding: 3px 0; }
+  .editor-block:hover { z-index: 20; }
+  .block-gutter { width: 24px; flex-shrink: 0; display: flex; justify-content: center; padding-top: 2px; }
+  .block-main { flex: 1; min-width: 0; }
   .block-content { outline: none; font-family: 'Inter', system-ui, sans-serif; font-size: 15px; line-height: 1.7; color: #111827; }
   .dark .block-content { color: #f3f4f6; }
   .block-content:empty::before { content: attr(data-placeholder); color: #9ca3af; }
@@ -43,29 +45,35 @@
   .stat-value.block-content { font-family: 'Source Serif 4', Charter, Georgia, serif; font-weight: 700; font-size: 28px; color: #1e3a8a; }
   .dark .stat-value.block-content { color: #93c5fd; }
   .stat-label.block-content { font-size: 12px; color: #6b7280; }
-  .block-controls { position: absolute; left: -40px; top: 2px; display: none; flex-direction: column; gap: 2px; }
+  .block-controls { position: static; display: none; flex-direction: column; gap: 2px; }
   .editor-block:hover .block-controls { display: flex; }
-  .block-controls button { width: 24px; height: 24px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; color: #6b7280; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .block-controls button { width: 24px; height: 24px; border-radius: 6px; border: 1px solid #e5e7eb; background: #fff; color: #6b7280; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
   .block-controls button:hover { background: #f3f4f6; color: #111827; }
   .block-controls button:disabled { opacity: 0.35; cursor: default; }
   .dark .block-controls button { background: #1f2937; border-color: #374151; color: #9ca3af; }
-  .insert-gap { position: relative; height: 14px; display: flex; align-items: center; }
-  .insert-gap-line { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #e5e7eb; opacity: 0; transition: opacity .15s; }
+  .insert-gap { position: relative; z-index: 0; display: flex; align-items: center; gap: 8px; min-height: 28px; }
+  .insert-gap:hover, .insert-gap.is-open { z-index: 9; }
+  .insert-gap .block-main { display: flex; align-items: center; gap: 8px; }
+  .insert-gap-line { flex: 1; height: 1px; width: 100%; background: #e5e7eb; opacity: 0; transition: opacity .15s; }
   .dark .insert-gap-line { background: #374151; }
-  .insert-gap:hover .insert-gap-line, .insert-gap.is-open .insert-gap-line { opacity: 1; }
-  .insert-plus { position: relative; z-index: 1; width: 22px; height: 22px; border-radius: 9999px; border: 1px solid #d1d5db; background: #fff; color: #6b7280; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity .15s; }
-  .insert-gap:hover .insert-plus, .insert-gap.is-open .insert-plus { opacity: 1; }
+  .insert-plus { position: relative; z-index: 1; width: 22px; height: 22px; border-radius: 9999px; border: 1px solid #d1d5db; background: #fff; color: #6b7280; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; transition: opacity .15s; flex-shrink: 0; }
+  .insert-gap:hover .insert-plus,
+  .insert-gap:hover .insert-gap-line,
+  .insert-gap.is-open .insert-plus,
+  .insert-gap.is-open .insert-gap-line,
+  .editor-block:hover + .insert-gap .insert-plus,
+  .editor-block:hover + .insert-gap .insert-gap-line,
+  .insert-gap:last-child .insert-plus { opacity: 1; }
+  .insert-gap:last-child .insert-gap-line { opacity: 0.45; }
   .insert-plus:hover, .insert-gap.is-open .insert-plus { border-color: #1e3a8a; color: #1e3a8a; }
   .dark .insert-plus { background: #1f2937; border-color: #4b5563; color: #9ca3af; }
-  .insert-picker { display: none; position: absolute; left: 30px; top: -6px; z-index: 20; gap: 6px; flex-wrap: wrap; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+  .insert-picker { display: none; position: absolute; left: 56px; top: 28px; z-index: 20; gap: 6px; flex-wrap: wrap; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.08); pointer-events: auto; }
   .dark .insert-picker { background: #1f2937; border-color: #374151; }
   .insert-gap.is-open .insert-picker { display: flex; }
   .insert-picker button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 7px; font-size: 12px; font-weight: 600; color: #1e3a8a; background: #fff; border: 1px solid #e5e7eb; cursor: pointer; white-space: nowrap; }
   .insert-picker button:hover { background: #eff6ff; border-color: #bfdbfe; }
   .dark .insert-picker button { background: #111827; border-color: #374151; color: #93c5fd; }
-  .pill-option { min-height: 2.5rem; }
   .pill-option input { position: absolute; opacity: 0; width: 0; height: 0; }
-  .content-tab { min-height: 2.5rem; }
   .content-tab input { position: absolute; opacity: 0; width: 0; height: 0; }
   .access-card input { position: absolute; opacity: 0; width: 0; height: 0; }
   summary.accordion-summary { list-style: none; }
@@ -79,29 +87,29 @@
 {% endblock %}
 
 {% block content %}
-  <div class="flex flex-wrap items-start justify-between gap-4 mb-7">
-    <div class="min-w-0">
+  <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
+    <div>
       <div class="text-[11px] tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">
         {% if is_edit %}{{ report.get_status_display|upper }} &middot; UPDATED {{ report.updated_at|date:"H:i" }}{% else %}NEW CONTENT &middot; DRAFT{% endif %}
       </div>
       <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300">{% if is_edit %}Edit content{% else %}Create content{% endif %}</h1>
     </div>
-    <div class="flex flex-wrap items-center gap-2.5 shrink-0">
-      <div class="flex items-center gap-2.5 h-10 px-3.5 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         <div class="w-16 h-1.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
           <div id="ready-bar" class="h-full bg-blue-600 transition-all duration-300" style="width:0%"></div>
         </div>
         <span id="ready-label" class="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">0/6 ready</span>
       </div>
-      <button type="button" id="preview-btn" class="inline-flex items-center justify-center gap-2 h-10 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 dark:focus-visible:ring-blue-300">
+      <button type="button" id="preview-btn" class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
         Preview
       </button>
-      <button type="button" class="btn-save-draft inline-flex items-center justify-center gap-2 h-10 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 dark:focus-visible:ring-blue-300">
+      <button type="button" class="btn-save-draft inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
         Save draft
       </button>
-      <button type="button" class="btn-publish inline-flex items-center justify-center gap-2 h-10 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] text-sm font-semibold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">
+      <button type="button" class="btn-publish inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
         Publish content
       </button>
@@ -111,9 +119,7 @@
   <form method="post" enctype="multipart/form-data" id="report-form">
     {% csrf_token %}
 
-    {% if form.non_field_errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mb-4">{{ form.non_field_errors }}</div>{% endif %}
-
-    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem] gap-x-6 gap-y-4 items-start">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
       <div class="flex flex-wrap gap-2.5">
         <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold cursor-pointer transition-all duration-200 border has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 has-[:checked]:shadow-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/80 shadow-2xs">
           <input type="radio" name="content_type" value="text" class="hidden" {% if report.content_type == 'text' or not report.content_type %}checked{% endif %}>
@@ -132,16 +138,18 @@
         </label>
       </div>
 
-      <div class="flex items-center lg:justify-end">
-        <button type="button" id="toggle-ai-btn" class="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 border border-purple-200/80 dark:border-purple-800/80 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors shadow-2xs cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
-          Draft with GCIO Intel
-        </button>
-      </div>
+      <button type="button" id="toggle-ai-btn" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 border border-purple-200/80 dark:border-purple-800/80 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
+        Draft with GCIO Intel
+      </button>
+    </div>
 
-      <div class="space-y-6 min-w-0">
+    {% if form.non_field_errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mb-4">{{ form.non_field_errors }}</div>{% endif %}
 
-        <div id="ai-card" class="hidden bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-800 rounded-xl p-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="md:col-span-2 space-y-6">
+
+        <div id="ai-card" class="hidden bg-blue-50/60 border border-blue-100 dark:border-blue-800 rounded-xl p-6">
           <div class="flex items-start justify-between gap-3 mb-4">
             <div class="flex items-start gap-3">
               <div class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
@@ -205,7 +213,7 @@
           {% endwith %}
         </div>
 
-        <div class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl shadow-2xs overflow-hidden min-h-[28rem]">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl shadow-2xs">
           <div class="flex items-center justify-between gap-3 px-6 sm:px-7 py-3 border-b border-gray-100 dark:border-gray-700/60">
             <div class="flex items-center gap-1.5 text-[10.5px] font-bold tracking-wider text-gray-400 dark:text-gray-500 uppercase">
               <span class="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
@@ -279,7 +287,7 @@
       </div>
 
       <!-- Right Column (Sidebar Master Panel) -->
-      <div class="space-y-5 lg:sticky lg:top-4 self-start w-full">
+      <div class="space-y-5">
         <!-- Accordion: Essentials / Classification / Access & Timing / Status -->
         <div class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl shadow-2xs divide-y divide-gray-100 dark:divide-gray-700/60 overflow-hidden">
 
@@ -298,10 +306,10 @@
                 <label class="block text-[10.5px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">PUBLICATION TYPE</label>
                 <div class="grid grid-cols-2 gap-2">
                   {% for pt in publication_type_options %}
-                  <label class="pill-option flex items-start gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 dark:border-gray-700 has-[:checked]:border-blue-300 dark:has-[:checked]:border-blue-700 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/30 has-[:checked]:text-blue-800 dark:has-[:checked]:text-blue-300 text-gray-700 dark:text-gray-300 cursor-pointer transition-colors min-w-0">
-                    <input type="radio" name="publication_type" value="{{ pt.id }}" class="essentials-field" data-name="{{ pt.name }}" {% if pt.id == selected_publication_type_id %}checked{% endif %}>
-                    <span class="w-2 h-2 rounded-full {{ pt.dot_color }} shrink-0 mt-1"></span>
-                    <span class="pubtype-name leading-snug">{{ pt.name }}</span>
+                  <label class="pill-option flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 dark:border-gray-700 has-[:checked]:border-blue-300 dark:has-[:checked]:border-blue-700 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/30 has-[:checked]:text-blue-800 dark:has-[:checked]:text-blue-300 text-gray-700 dark:text-gray-300 cursor-pointer transition-colors">
+                    <input type="radio" name="publication_type" value="{{ pt.id }}" class="essentials-field" {% if pt.id == selected_publication_type_id %}checked{% endif %}>
+                    <span class="w-2 h-2 rounded-full {{ pt.dot_color }} shrink-0"></span>
+                    <span class="truncate">{{ pt.name }}</span>
                   </label>
                   {% endfor %}
                 </div>
@@ -336,7 +344,7 @@
           </details>
 
           <!-- Classification -->
-          <details id="section-classification" class="group">
+          <details id="section-classification">
             <summary class="accordion-summary flex items-center gap-3 px-5 sm:px-6 py-4 cursor-pointer select-none">
               <span class="section-dot status-dot shrink-0" data-section="classification"></span>
               <div class="flex-1 min-w-0">
@@ -399,11 +407,10 @@
                 class="w-full pl-8 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-gray-100 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
               <svg class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             </div>
-            </div>
           </details>
 
           <!-- Access & Timing -->
-          <details id="section-access" class="group">
+          <details id="section-access">
             <summary class="accordion-summary flex items-center gap-3 px-5 sm:px-6 py-4 cursor-pointer select-none">
               <span class="section-dot status-dot shrink-0" data-section="access"></span>
               <div class="flex-1 min-w-0">
@@ -456,7 +463,7 @@
           </details>
 
           <!-- Status -->
-          <details id="section-status" class="group">
+          <details id="section-status">
             <summary class="accordion-summary flex items-center gap-3 px-5 sm:px-6 py-4 cursor-pointer select-none">
               <span class="section-dot status-dot" data-section="status"></span>
               <div class="flex-1 min-w-0">
@@ -1277,8 +1284,8 @@
   function getSelectedPublicationType() {
     const checked = document.querySelector('input[name="publication_type"]:checked');
     if (!checked) return null;
-    const label = checked.closest('.pill-option')?.querySelector('.pubtype-name, span.truncate');
-    return { id: checked.value, name: (label ? label.textContent.trim() : '') || checked.dataset.name || '' };
+    const label = checked.closest('.pill-option')?.querySelector('span.truncate');
+    return { id: checked.value, name: label ? label.textContent.trim() : '' };
   }
   function getSelectedAuthor() {
     const checked = document.querySelector('input[name="author"]:checked');
@@ -1442,6 +1449,7 @@
 
   let blocks = parseHtmlToBlocks(bodyInput.value);
   let openGapIndex = null;
+  let ignorePickerDocClick = false;
 
   const BLOCK_TYPES = [
     { key: 'text', label: 'Text', icon: '<path d="M4 7V4h16v3M9 20h6M12 4v16"/>' },
@@ -1453,7 +1461,38 @@
 
   const blockEditor = document.getElementById('block-editor');
 
-  function makeBlockEl(block) {
+  function isBlockEmpty(block) {
+    if (block.type === 'data') return !stripHtml(block.value).replace(/\u00a0/g, ' ').trim() && !stripHtml(block.label).replace(/\u00a0/g, ' ').trim();
+    if (block.type === 'image') return !block.src;
+    return !stripHtml(block.html).replace(/\u00a0/g, ' ').trim();
+  }
+
+  function bindEmptyBlockDelete(el, index, block) {
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey && (block.type === 'text' || block.type === 'heading')) {
+        e.preventDefault();
+        block.html = el.innerHTML;
+        const newBlock = { id: newBlockId(), type: 'text', html: '', raw: false };
+        blocks.splice(index + 1, 0, newBlock);
+        renderBlocks();
+        focusBlock(index + 1);
+        return;
+      }
+      if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+      const liveEmpty = !((el.innerText || el.textContent || '').replace(/\u00a0/g, ' ').trim());
+      if ((!liveEmpty && !isBlockEmpty(block)) || blocks.length <= 1) return;
+      e.preventDefault();
+      deleteBlock(index);
+    });
+  }
+
+  function runBlockAction(action, index) {
+    if (action === 'delete') deleteBlock(index);
+    else if (action === 'up') moveBlock(index, -1);
+    else if (action === 'down') moveBlock(index, 1);
+  }
+
+  function makeBlockEl(block, index) {
     if (block.type === 'text') {
       const div = document.createElement('div');
       div.className = 'block-content block-text';
@@ -1461,6 +1500,7 @@
       div.dataset.placeholder = 'Write the analysis…';
       div.innerHTML = block.html;
       div.addEventListener('input', () => { block.html = div.innerHTML; });
+      bindEmptyBlockDelete(div, index, block);
       return div;
     }
     if (block.type === 'heading') {
@@ -1470,6 +1510,7 @@
       h.dataset.placeholder = 'Section heading';
       h.innerHTML = block.html;
       h.addEventListener('input', () => { block.html = h.innerHTML; });
+      bindEmptyBlockDelete(h, index, block);
       return h;
     }
     if (block.type === 'quote') {
@@ -1479,6 +1520,7 @@
       bq.dataset.placeholder = 'Pulled-out quote…';
       bq.innerHTML = block.html;
       bq.addEventListener('input', () => { block.html = bq.innerHTML; });
+      bindEmptyBlockDelete(bq, index, block);
       return bq;
     }
     if (block.type === 'image') {
@@ -1507,6 +1549,8 @@
     label.addEventListener('input', () => { block.label = label.innerHTML; });
     wrap.appendChild(value);
     wrap.appendChild(label);
+    bindEmptyBlockDelete(value, index, block);
+    bindEmptyBlockDelete(label, index, block);
     return wrap;
   }
 
@@ -1515,18 +1559,29 @@
     gap.className = 'insert-gap';
     if (openGapIndex === index) gap.classList.add('is-open');
 
-    const line = document.createElement('div');
-    line.className = 'insert-gap-line';
+    const gutter = document.createElement('div');
+    gutter.className = 'block-gutter';
 
     const plus = document.createElement('button');
     plus.type = 'button';
     plus.className = 'insert-plus';
+    plus.setAttribute('aria-label', 'Add next line');
     plus.innerHTML = '<svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>';
     plus.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
+      ignorePickerDocClick = true;
       openGapIndex = openGapIndex === index ? null : index;
       renderBlocks();
+      setTimeout(() => { ignorePickerDocClick = false; }, 0);
     });
+
+    const lineWrap = document.createElement('div');
+    lineWrap.className = 'block-main';
+    const line = document.createElement('div');
+    line.className = 'insert-gap-line';
+    lineWrap.appendChild(plus);
+    lineWrap.appendChild(line);
 
     const picker = document.createElement('div');
     picker.className = 'insert-picker';
@@ -1535,54 +1590,69 @@
       btn.type = 'button';
       btn.innerHTML = `<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${bt.icon}</svg>${bt.label}`;
       btn.addEventListener('click', (e) => {
+        e.preventDefault();
         e.stopPropagation();
         insertBlockAt(index, bt.key);
       });
       picker.appendChild(btn);
     });
 
-    gap.appendChild(line);
-    gap.appendChild(plus);
+    gap.appendChild(gutter);
+    gap.appendChild(lineWrap);
     gap.appendChild(picker);
     return gap;
   }
 
+  function controlButton(action, index, title, svg, disabled) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.title = title;
+    btn.setAttribute('data-block-action', action);
+    btn.setAttribute('data-block-index', String(index));
+    btn.innerHTML = svg;
+    btn.disabled = !!disabled;
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (btn.disabled) return;
+      runBlockAction(action, index);
+    });
+    return btn;
+  }
+
   function renderBlocks() {
     blockEditor.innerHTML = '';
-    blockEditor.appendChild(renderGap(0));
     blocks.forEach((block, i) => {
       const wrapper = document.createElement('div');
       wrapper.className = 'editor-block';
+      wrapper.setAttribute('data-block-index', String(i));
 
+      const gutter = document.createElement('div');
+      gutter.className = 'block-gutter';
       const controls = document.createElement('div');
       controls.className = 'block-controls';
+      controls.appendChild(controlButton(
+        'up', i, 'Move up',
+        '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg>',
+        i === 0
+      ));
+      controls.appendChild(controlButton(
+        'down', i, 'Move down',
+        '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>',
+        i === blocks.length - 1
+      ));
+      controls.appendChild(controlButton(
+        'delete', i, 'Delete block',
+        '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+      ));
+      gutter.appendChild(controls);
 
-      const upBtn = document.createElement('button');
-      upBtn.type = 'button';
-      upBtn.title = 'Move up';
-      upBtn.innerHTML = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m18 15-6-6-6 6"/></svg>';
-      upBtn.disabled = i === 0;
-      upBtn.addEventListener('click', () => moveBlock(i, -1));
+      const main = document.createElement('div');
+      main.className = 'block-main';
+      main.appendChild(makeBlockEl(block, i));
 
-      const downBtn = document.createElement('button');
-      downBtn.type = 'button';
-      downBtn.title = 'Move down';
-      downBtn.innerHTML = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>';
-      downBtn.disabled = i === blocks.length - 1;
-      downBtn.addEventListener('click', () => moveBlock(i, 1));
-
-      const delBtn = document.createElement('button');
-      delBtn.type = 'button';
-      delBtn.title = 'Delete block';
-      delBtn.innerHTML = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>';
-      delBtn.addEventListener('click', () => deleteBlock(i));
-
-      controls.appendChild(upBtn);
-      controls.appendChild(downBtn);
-      controls.appendChild(delBtn);
-
-      wrapper.appendChild(controls);
-      wrapper.appendChild(makeBlockEl(block));
+      wrapper.appendChild(gutter);
+      wrapper.appendChild(main);
       blockEditor.appendChild(wrapper);
       blockEditor.appendChild(renderGap(i + 1));
     });
@@ -1614,6 +1684,7 @@
   }
 
   function deleteBlock(index) {
+    if (index < 0 || index >= blocks.length) return;
     blocks.splice(index, 1);
     if (!blocks.length) blocks.push({ id: newBlockId(), type: 'text', html: '', raw: false });
     renderBlocks();
@@ -1628,7 +1699,16 @@
   }
 
   document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-block-action]')) return;
+    if (ignorePickerDocClick) return;
     if (openGapIndex !== null && !e.target.closest('.insert-gap')) {
+      openGapIndex = null;
+      renderBlocks();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && openGapIndex !== null) {
       openGapIndex = null;
       renderBlocks();
     }

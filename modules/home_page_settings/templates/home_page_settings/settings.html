@@ -75,25 +75,16 @@
       <div>
         <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">SETTINGS</div>
         <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Home Page Settings</h1>
-        <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Choose which sections appear on the client research portal Home page. These settings apply to every client user.</p>
+        <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Choose which sections appear on the client research portal Home page. These settings apply to every client user and save as soon as you toggle a section.</p>
       </div>
-      <div class="flex items-center gap-2.5 shrink-0">
-        <a href="{% url 'client_home_preview' %}" class="inline-flex items-center gap-2 border border-gray-200 dark:border-gray-700 text-blue-900 dark:text-blue-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap cursor-pointer">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-          Preview client Home
-        </a>
-        <button type="submit" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap cursor-pointer">
-          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
-          Save settings
-        </button>
-      </div>
+      <div id="settings-save-status" class="text-[13px] font-semibold text-gray-400 dark:text-gray-500 whitespace-nowrap pt-8" aria-live="polite"></div>
     </div>
 
     <div class="border-b border-gray-200 dark:border-gray-700 mb-6"></div>
 
     <div class="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-xl px-4 py-3.5 text-[13.5px] text-gray-600 dark:text-gray-400 mb-6">
       <svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
-      Turning a section off hides it completely on <span class="font-semibold text-gray-700 dark:text-gray-300">/portal</span>. Content elsewhere on the portal is unchanged.
+      Turning a section off hides it immediately on <span class="font-semibold text-gray-700 dark:text-gray-300">/portal</span>. Content elsewhere on the portal is unchanged.
     </div>
 
     <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
@@ -119,24 +110,63 @@
 
 {% block extra_scripts %}
 <script>
-  document.querySelectorAll('.home-toggle input').forEach((input) => {
-    input.addEventListener('change', () => {
-      const label = input.closest('.flex.items-center')?.querySelector('[data-toggle-label]');
-      if (!label) return;
-      const on = input.checked;
-      label.textContent = on ? 'ON' : 'OFF';
-      label.classList.toggle('text-green-700', on);
-      label.classList.toggle('dark:text-green-400', on);
-      label.classList.toggle('text-gray-400', !on);
-      label.classList.toggle('dark:text-gray-500', !on);
-    });
-  });
-
   const form = document.getElementById('home-page-settings-form');
-  form.addEventListener('submit', () => {
-    const btn = form.querySelector('button[type="submit"]');
-    btn.disabled = true;
-    btn.classList.add('opacity-70', 'cursor-not-allowed');
+  const statusEl = document.getElementById('settings-save-status');
+  const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+  form.addEventListener('submit', (event) => event.preventDefault());
+
+  function setToggleLabel(input) {
+    const label = input.closest('.flex.items-center')?.querySelector('[data-toggle-label]');
+    if (!label) return;
+    const on = input.checked;
+    label.textContent = on ? 'ON' : 'OFF';
+    label.classList.toggle('text-green-700', on);
+    label.classList.toggle('dark:text-green-400', on);
+    label.classList.toggle('text-gray-400', !on);
+    label.classList.toggle('dark:text-gray-500', !on);
+  }
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text;
+    statusEl.className = 'text-[13px] font-semibold whitespace-nowrap pt-8 ' + (
+      kind === 'error' ? 'text-red-700 dark:text-red-400'
+        : kind === 'saved' ? 'text-green-700 dark:text-green-400'
+        : 'text-gray-400 dark:text-gray-500'
+    );
+  }
+
+  document.querySelectorAll('.home-toggle input').forEach((input) => {
+    input.addEventListener('change', async () => {
+      setToggleLabel(input);
+      const previous = !input.checked;
+      input.disabled = true;
+      setStatus('Saving…', 'pending');
+      try {
+        const body = new URLSearchParams({
+          csrfmiddlewaretoken: csrfToken,
+          field: input.name,
+          value: input.checked ? 'on' : 'off',
+        });
+        const response = await fetch(form.action || window.location.href, {
+          method: 'POST',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body,
+        });
+        if (!response.ok) throw new Error('Save failed');
+        const data = await response.json();
+        if (!data.ok) throw new Error('Save failed');
+        setStatus('Saved', 'saved');
+      } catch (err) {
+        input.checked = previous;
+        setToggleLabel(input);
+        setStatus('Could not save. Try again.', 'error');
+      } finally {
+        input.disabled = false;
+      }
+    });
   });
 </script>
 {% endblock %}

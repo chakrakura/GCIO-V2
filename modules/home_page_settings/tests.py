@@ -166,8 +166,24 @@ class HomePageSettingsTests(TestCase):
         response = self.client.get(reverse('client_home_preview'))
         self.assertEqual(response.status_code, 302)
 
-    def test_settings_page_links_to_preview(self):
+    def test_settings_page_has_no_save_or_preview_buttons(self):
         self.client.force_login(self.super_admin)
         response = self.client.get(reverse('home_page_settings'))
-        self.assertContains(response, 'Preview client Home')
-        self.assertContains(response, reverse('client_home_preview'))
+        self.assertNotContains(response, 'Preview client Home')
+        self.assertNotContains(response, 'Save settings')
+        self.assertContains(response, 'save as soon as you toggle')
+
+    def test_ajax_toggle_saves_one_field(self):
+        self.client.force_login(self.super_admin)
+        url = reverse('home_page_settings')
+        response = self.client.post(
+            url,
+            {'field': 'show_weekly_notes', 'value': 'off'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'ok': True})
+        settings_obj = HomePageSettings.load()
+        self.assertFalse(settings_obj.show_weekly_notes)
+        self.assertTrue(settings_obj.show_featured_research)
+        self.assertTrue(settings_obj.show_latest_research)

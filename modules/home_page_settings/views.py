@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 
 from modules.client_portal.views import _all_published_current, _home_greeting, assemble_home_context
@@ -33,11 +34,18 @@ def home_page_settings_view(request):
     settings_obj = HomePageSettings.load()
 
     if request.method == 'POST':
-        for field in SECTION_FIELDS:
-            setattr(settings_obj, field, request.POST.get(field) == 'on')
-        settings_obj.save(update_fields=[*SECTION_FIELDS, 'updated_at'])
+        field = request.POST.get('field')
+        if field in SECTION_FIELDS:
+            setattr(settings_obj, field, request.POST.get('value') == 'on')
+            settings_obj.save(update_fields=[field, 'updated_at'])
+        else:
+            for name in SECTION_FIELDS:
+                setattr(settings_obj, name, request.POST.get(name) == 'on')
+            settings_obj.save(update_fields=[*SECTION_FIELDS, 'updated_at'])
 
         log_activity(request, 'updated home page settings')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'ok': True})
         messages.success(request, 'Home page settings were saved.')
         return redirect('home_page_settings')
 

@@ -16,11 +16,11 @@
         e.preventDefault();
 
         const url = tab.getAttribute('href');
-        const daily = document.getElementById('daily-note-container');
-        const weekly = document.getElementById('weekly-notes-container');
+        const sections = document.querySelectorAll('[data-home-notes]');
         try {
-          if (daily) await refreshNotes(daily, url, 'daily');
-          if (weekly) await refreshNotes(weekly, url, 'weekly');
+          for (const sectionEl of sections) {
+            await refreshNotes(sectionEl, url, sectionEl.getAttribute('data-section'));
+          }
         } catch (err) {
           return;
         }

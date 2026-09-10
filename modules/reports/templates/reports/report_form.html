@@ -19,7 +19,8 @@
   .report-body blockquote { font-family: 'Source Serif 4', Charter, Georgia, serif; font-style: italic; color: #1e3a8a; border-left-color: #1e3a8a; }
   .dark .report-body blockquote { color: #93c5fd; border-left-color: #93c5fd; }
 
-  #block-editor { min-height: 200px; padding-left: 40px; }
+  #block-editor { min-height: 240px; padding-left: 40px; }
+  #id_page_count { width: 3.5rem; text-align: center; padding-left: 0.5rem; padding-right: 0.5rem; }
   .editor-block { position: relative; padding: 3px 0; }
   .block-content { outline: none; font-family: 'Inter', system-ui, sans-serif; font-size: 15px; line-height: 1.7; color: #111827; }
   .dark .block-content { color: #f3f4f6; }
@@ -62,7 +63,9 @@
   .insert-picker button { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 7px; font-size: 12px; font-weight: 600; color: #1e3a8a; background: #fff; border: 1px solid #e5e7eb; cursor: pointer; white-space: nowrap; }
   .insert-picker button:hover { background: #eff6ff; border-color: #bfdbfe; }
   .dark .insert-picker button { background: #111827; border-color: #374151; color: #93c5fd; }
+  .pill-option { min-height: 2.5rem; }
   .pill-option input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .content-tab { min-height: 2.5rem; }
   .content-tab input { position: absolute; opacity: 0; width: 0; height: 0; }
   .access-card input { position: absolute; opacity: 0; width: 0; height: 0; }
   summary.accordion-summary { list-style: none; }
@@ -76,29 +79,29 @@
 {% endblock %}
 
 {% block content %}
-  <div class="flex items-center justify-between mb-6 flex-wrap gap-4">
-    <div>
+  <div class="flex flex-wrap items-start justify-between gap-4 mb-7">
+    <div class="min-w-0">
       <div class="text-[11px] tracking-wider font-bold text-gray-400 dark:text-gray-500 mb-1.5">
         {% if is_edit %}{{ report.get_status_display|upper }} &middot; UPDATED {{ report.updated_at|date:"H:i" }}{% else %}NEW CONTENT &middot; DRAFT{% endif %}
       </div>
       <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300">{% if is_edit %}Edit content{% else %}Create content{% endif %}</h1>
     </div>
-    <div class="flex items-center gap-3">
-      <div class="flex items-center gap-2.5 px-3.5 py-2 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+    <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+      <div class="flex items-center gap-2.5 h-10 px-3.5 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
         <div class="w-16 h-1.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
           <div id="ready-bar" class="h-full bg-blue-600 transition-all duration-300" style="width:0%"></div>
         </div>
         <span id="ready-label" class="text-xs font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">0/6 ready</span>
       </div>
-      <button type="button" id="preview-btn" class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+      <button type="button" id="preview-btn" class="inline-flex items-center justify-center gap-2 h-10 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 dark:focus-visible:ring-blue-300">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
         Preview
       </button>
-      <button type="button" class="btn-save-draft inline-flex items-center gap-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2.5 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700">
+      <button type="button" class="btn-save-draft inline-flex items-center justify-center gap-2 h-10 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg px-4 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 dark:focus-visible:ring-blue-300">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
         Save draft
       </button>
-      <button type="button" class="btn-publish inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold">
+      <button type="button" class="btn-publish inline-flex items-center justify-center gap-2 h-10 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] text-sm font-semibold cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900">
         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
         Publish content
       </button>
@@ -108,7 +111,9 @@
   <form method="post" enctype="multipart/form-data" id="report-form">
     {% csrf_token %}
 
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    {% if form.non_field_errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mb-4">{{ form.non_field_errors }}</div>{% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] xl:grid-cols-[minmax(0,1fr)_24rem] gap-x-6 gap-y-4 items-start">
       <div class="flex flex-wrap gap-2.5">
         <label class="content-tab inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold cursor-pointer transition-all duration-200 border has-[:checked]:bg-blue-900 has-[:checked]:text-white has-[:checked]:border-blue-900 has-[:checked]:shadow-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/80 shadow-2xs">
           <input type="radio" name="content_type" value="text" class="hidden" {% if report.content_type == 'text' or not report.content_type %}checked{% endif %}>
@@ -127,18 +132,16 @@
         </label>
       </div>
 
-      <button type="button" id="toggle-ai-btn" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 border border-purple-200/80 dark:border-purple-800/80 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500">
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
-        Draft with GCIO Intel
-      </button>
-    </div>
+      <div class="flex items-center lg:justify-end">
+        <button type="button" id="toggle-ai-btn" class="inline-flex items-center gap-2 h-10 px-4 rounded-xl text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/30 border border-purple-200/80 dark:border-purple-800/80 hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors shadow-2xs cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v3M12 18v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M3 12h3M18 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
+          Draft with GCIO Intel
+        </button>
+      </div>
 
-    {% if form.non_field_errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mb-4">{{ form.non_field_errors }}</div>{% endif %}
+      <div class="space-y-6 min-w-0">
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="md:col-span-2 space-y-6">
-
-        <div id="ai-card" class="hidden bg-blue-50/60 border border-blue-100 dark:border-blue-800 rounded-xl p-6">
+        <div id="ai-card" class="hidden bg-blue-50/60 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-800 rounded-xl p-6">
           <div class="flex items-start justify-between gap-3 mb-4">
             <div class="flex items-start gap-3">
               <div class="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 flex items-center justify-center shrink-0">
@@ -202,7 +205,7 @@
           {% endwith %}
         </div>
 
-        <div class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl shadow-2xs overflow-hidden">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl shadow-2xs overflow-hidden min-h-[28rem]">
           <div class="flex items-center justify-between gap-3 px-6 sm:px-7 py-3 border-b border-gray-100 dark:border-gray-700/60">
             <div class="flex items-center gap-1.5 text-[10.5px] font-bold tracking-wider text-gray-400 dark:text-gray-500 uppercase">
               <span class="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
@@ -276,7 +279,7 @@
       </div>
 
       <!-- Right Column (Sidebar Master Panel) -->
-      <div class="space-y-5">
+      <div class="space-y-5 lg:sticky lg:top-4 self-start w-full">
         <!-- Accordion: Essentials / Classification / Access & Timing / Status -->
         <div class="bg-white dark:bg-gray-800 border border-gray-200/80 dark:border-gray-700/80 rounded-2xl shadow-2xs divide-y divide-gray-100 dark:divide-gray-700/60 overflow-hidden">
 
@@ -295,10 +298,10 @@
                 <label class="block text-[10.5px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">PUBLICATION TYPE</label>
                 <div class="grid grid-cols-2 gap-2">
                   {% for pt in publication_type_options %}
-                  <label class="pill-option flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 dark:border-gray-700 has-[:checked]:border-blue-300 dark:has-[:checked]:border-blue-700 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/30 has-[:checked]:text-blue-800 dark:has-[:checked]:text-blue-300 text-gray-700 dark:text-gray-300 cursor-pointer transition-colors">
-                    <input type="radio" name="publication_type" value="{{ pt.id }}" class="essentials-field" {% if pt.id == selected_publication_type_id %}checked{% endif %}>
-                    <span class="w-2 h-2 rounded-full {{ pt.dot_color }} shrink-0"></span>
-                    <span class="truncate">{{ pt.name }}</span>
+                  <label class="pill-option flex items-start gap-2 px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 dark:border-gray-700 has-[:checked]:border-blue-300 dark:has-[:checked]:border-blue-700 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/30 has-[:checked]:text-blue-800 dark:has-[:checked]:text-blue-300 text-gray-700 dark:text-gray-300 cursor-pointer transition-colors min-w-0">
+                    <input type="radio" name="publication_type" value="{{ pt.id }}" class="essentials-field" data-name="{{ pt.name }}" {% if pt.id == selected_publication_type_id %}checked{% endif %}>
+                    <span class="w-2 h-2 rounded-full {{ pt.dot_color }} shrink-0 mt-1"></span>
+                    <span class="pubtype-name leading-snug">{{ pt.name }}</span>
                   </label>
                   {% endfor %}
                 </div>
@@ -333,7 +336,7 @@
           </details>
 
           <!-- Classification -->
-          <details id="section-classification">
+          <details id="section-classification" class="group">
             <summary class="accordion-summary flex items-center gap-3 px-5 sm:px-6 py-4 cursor-pointer select-none">
               <span class="section-dot status-dot shrink-0" data-section="classification"></span>
               <div class="flex-1 min-w-0">
@@ -396,10 +399,11 @@
                 class="w-full pl-8 pr-3 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-xs text-gray-900 dark:text-gray-100 bg-gray-50/50 dark:bg-gray-900/50 focus:bg-white dark:focus:bg-gray-800 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
               <svg class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             </div>
+            </div>
           </details>
 
           <!-- Access & Timing -->
-          <details id="section-access">
+          <details id="section-access" class="group">
             <summary class="accordion-summary flex items-center gap-3 px-5 sm:px-6 py-4 cursor-pointer select-none">
               <span class="section-dot status-dot shrink-0" data-section="access"></span>
               <div class="flex-1 min-w-0">
@@ -452,7 +456,7 @@
           </details>
 
           <!-- Status -->
-          <details id="section-status">
+          <details id="section-status" class="group">
             <summary class="accordion-summary flex items-center gap-3 px-5 sm:px-6 py-4 cursor-pointer select-none">
               <span class="section-dot status-dot" data-section="status"></span>
               <div class="flex-1 min-w-0">
@@ -1273,8 +1277,8 @@
   function getSelectedPublicationType() {
     const checked = document.querySelector('input[name="publication_type"]:checked');
     if (!checked) return null;
-    const label = checked.closest('.pill-option')?.querySelector('span.truncate');
-    return { id: checked.value, name: label ? label.textContent.trim() : '' };
+    const label = checked.closest('.pill-option')?.querySelector('.pubtype-name, span.truncate');
+    return { id: checked.value, name: (label ? label.textContent.trim() : '') || checked.dataset.name || '' };
   }
   function getSelectedAuthor() {
     const checked = document.querySelector('input[name="author"]:checked');

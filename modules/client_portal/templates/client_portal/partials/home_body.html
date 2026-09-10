@@ -131,35 +131,7 @@
   {% endif %}
   {% endif %}
 
-  {% if home_page_settings.show_latest_research %}
-  <div class="flex items-center justify-between mt-10 mb-4">
-    <div class="flex items-center gap-2.5">
-      <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
-      <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">Daily Note</h2>
-    </div>
-    <a href="{% if is_home_preview %}{{ daily_preview_list_url }}{% else %}{% url 'client_publication_series' 'daily-note' %}{% endif %}" class="text-[13px] font-semibold text-blue-700 dark:text-blue-400 hover:underline">View more &rsaquo;</a>
-  </div>
-
-  <div id="daily-note-container" data-home-notes>
-    {% include 'client_portal/partials/latest_research.html' with reports=daily_notes_ctx.reports asset_class_id=daily_notes_ctx.asset_class_id notes_section=daily_notes_ctx.notes_section notes_filter_param=daily_notes_ctx.notes_filter_param notes_all_url=daily_notes_ctx.notes_all_url notes_query_suffix=daily_notes_ctx.notes_query_suffix %}
-  </div>
-  {% endif %}
-
-  {% if home_page_settings.show_weekly_notes %}
-  <div class="flex items-center justify-between mt-10 mb-4">
-    <div class="flex items-center gap-2.5">
-      <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
-      <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">Weekly Insight</h2>
-    </div>
-    <a href="{% if is_home_preview %}{{ weekly_preview_list_url }}{% else %}{% url 'client_publication_series' 'weekly-insight' %}{% endif %}" class="text-[13px] font-semibold text-blue-700 dark:text-blue-400 hover:underline">View more &rsaquo;</a>
-  </div>
-
-  <div id="weekly-notes-container" data-home-notes>
-    {% include 'client_portal/partials/latest_research.html' with reports=weekly_notes_ctx.reports asset_class_id=weekly_notes_ctx.asset_class_id notes_section=weekly_notes_ctx.notes_section notes_filter_param=weekly_notes_ctx.notes_filter_param notes_all_url=weekly_notes_ctx.notes_all_url notes_query_suffix=weekly_notes_ctx.notes_query_suffix %}
-  </div>
-  {% endif %}
-
-  {% for section in series_notes %}
+  {% for section in filtered_notes %}
   <div class="flex items-center justify-between mt-10 mb-4">
     <div class="flex items-center gap-2.5">
       <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
@@ -167,7 +139,10 @@
     </div>
     <a href="{% if is_home_preview %}{{ section.preview_list_url }}{% else %}{{ section.client_list_url }}{% endif %}" class="text-[13px] font-semibold text-blue-700 dark:text-blue-400 hover:underline">View more &rsaquo;</a>
   </div>
-  {% include 'client_portal/partials/latest_research.html' with reports=section.reports hide_notes_filters=True %}
+
+  <div id="{{ section.container_id }}" data-home-notes data-section="{{ section.notes_section }}">
+    {% include 'client_portal/partials/latest_research.html' with reports=section.reports asset_class_id=section.asset_class_id notes_section=section.notes_section notes_filter_param=section.notes_filter_param notes_all_url=section.notes_all_url notes_query_suffix=section.notes_query_suffix %}
+  </div>
   {% endfor %}
 
   {% if home_page_settings.show_research_by_asset_class and featured_asset_classes %}
@@ -175,11 +150,11 @@
     <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
     <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">Research by Asset Class</h2>
   </div>
-  <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl mb-10 overflow-hidden">
+  <div class="flex gap-3 mb-10 overflow-x-auto pb-1">
     {% for ac in featured_asset_classes %}
-    <a href="{% if is_home_preview %}{% url 'report_list' %}?asset_class={{ ac.id }}{% else %}{% url 'client_browse' %}?asset_class={{ ac.id }}{% endif %}" class="flex items-center justify-between px-6 py-4 font-serif font-bold text-lg text-blue-900 dark:text-blue-300 hover:bg-gray-50 dark:hover:bg-gray-700 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-700{% endif %}">
-      {{ ac.name }}
-      <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    <a href="{% if is_home_preview %}{% url 'report_list' %}?asset_class={{ ac.id }}{% else %}{% url 'client_browse' %}?asset_class={{ ac.id }}{% endif %}" title="{{ ac.name }}" class="group flex-1 min-w-[8.5rem] flex items-center justify-between gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50/60 dark:hover:bg-blue-900/20 transition-colors duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 dark:focus-visible:ring-blue-300">
+      <span class="font-serif font-bold text-[14.5px] text-blue-900 dark:text-blue-300 truncate">{{ ac.name }}</span>
+      <svg class="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 shrink-0 group-hover:text-blue-700 dark:group-hover:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
     </a>
     {% endfor %}
   </div>

@@ -14,7 +14,6 @@ SECTION_FIELDS = (
     'show_monthly_notes',
     'show_quarterly_notes',
     'show_annual_notes',
-    'show_special_reports',
     'show_research_by_asset_class',
 )
 
@@ -22,10 +21,9 @@ SECTION_TOGGLES = (
     ('show_featured_research', 'Featured Research', 'Hero card and featured reports at the top of Home.'),
     ('show_latest_research', 'Daily Note', 'Latest Daily Note reports with asset-class filter tabs.'),
     ('show_weekly_notes', 'Weekly Insight', 'Latest Weekly Insight reports with asset-class filter tabs.'),
-    ('show_monthly_notes', 'Monthly Digest', 'Latest Monthly Digest reports.'),
-    ('show_quarterly_notes', 'Quarterly Review', 'Latest Quarterly Review reports.'),
-    ('show_annual_notes', 'Annual Outlook', 'Latest Annual Outlook reports.'),
-    ('show_special_reports', 'Special Report', 'Latest Special Report publications.'),
+    ('show_monthly_notes', 'Monthly Digest', 'Latest Monthly Digest reports with asset-class filter tabs.'),
+    ('show_quarterly_notes', 'Quarterly Review', 'Latest Quarterly Review reports with asset-class filter tabs.'),
+    ('show_annual_notes', 'Annual Outlook', 'Latest Annual Outlook reports with asset-class filter tabs.'),
     ('show_research_by_asset_class', 'Research by Asset Class', 'Asset-class headings linking to filtered research.'),
 )
 

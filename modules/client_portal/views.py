@@ -195,13 +195,12 @@ def _pdf_page_count(pdf_path):
 
 
 HOME_NOTES_LIMIT = 3
-DAILY_NOTE_SLUG = 'daily-note'
-WEEKLY_NOTE_SLUG = 'weekly-insight'
-SERIES_NOTES_SECTIONS = (
-    ('Monthly Digest', 'monthly-digest', 'show_monthly_notes'),
-    ('Quarterly Review', 'quarterly-review', 'show_quarterly_notes'),
-    ('Annual Outlook', 'annual-outlook', 'show_annual_notes'),
-    ('Special Report', 'special-report', 'show_special_reports'),
+FILTERED_NOTES_SECTIONS = (
+    ('daily', 'Daily Note', 'daily-note', 'show_latest_research', 'asset_class', 'daily-note-container'),
+    ('weekly', 'Weekly Insight', 'weekly-insight', 'show_weekly_notes', 'weekly_asset_class', 'weekly-notes-container'),
+    ('monthly', 'Monthly Digest', 'monthly-digest', 'show_monthly_notes', 'monthly_asset_class', 'monthly-digest-container'),
+    ('quarterly', 'Quarterly Review', 'quarterly-review', 'show_quarterly_notes', 'quarterly_asset_class', 'quarterly-review-container'),
+    ('annual', 'Annual Outlook', 'annual-outlook', 'show_annual_notes', 'annual_asset_class', 'annual-outlook-container'),
 )
 
 
@@ -305,49 +304,34 @@ def assemble_home_context(request, reports_qs, home_url_name='client_home', is_h
         )
     ))
 
-    daily_notes_ctx = _home_notes_context(
-        request, request.user, asset_classes, saved_report_ids,
-        section='daily', slug=DAILY_NOTE_SLUG, filter_param='asset_class',
-        selected_id=request.GET.get('asset_class', '').strip(),
-        reports_qs=reports_qs, home_url_name=home_url_name, is_home_preview=is_home_preview,
-    )
-    weekly_notes_ctx = _home_notes_context(
-        request, request.user, asset_classes, saved_report_ids,
-        section='weekly', slug=WEEKLY_NOTE_SLUG, filter_param='weekly_asset_class',
-        selected_id=request.GET.get('weekly_asset_class', '').strip(),
-        reports_qs=reports_qs, home_url_name=home_url_name, is_home_preview=is_home_preview,
-    )
     preview_list_urls = {}
     if is_home_preview:
-        preview_list_urls = _publication_type_list_urls([
-            DAILY_NOTE_SLUG,
-            WEEKLY_NOTE_SLUG,
-            *[slug for _, slug, _ in SERIES_NOTES_SECTIONS],
-        ])
+        preview_list_urls = _publication_type_list_urls([slug for _, _, slug, _, _, _ in FILTERED_NOTES_SECTIONS])
     fallback_list_url = reverse('report_list') if is_home_preview else ''
 
-    series_notes = [
-        {
+    notes_ctx_by_section = {}
+    filtered_notes = []
+    for section, title, slug, field, filter_param, container_id in FILTERED_NOTES_SECTIONS:
+        ctx = _home_notes_context(
+            request, request.user, asset_classes, saved_report_ids,
+            section=section, slug=slug, filter_param=filter_param,
+            selected_id=request.GET.get(filter_param, '').strip(),
+            reports_qs=reports_qs, home_url_name=home_url_name, is_home_preview=is_home_preview,
+        )
+        ctx.update({
             'title': title,
             'slug': slug,
-            'reports': _notes_for_publication_type(
-                request.user, slug, None, limit=HOME_NOTES_LIMIT, reports_qs=reports_qs,
-            ),
+            'container_id': container_id,
             'preview_list_url': preview_list_urls.get(slug, fallback_list_url),
-            'client_list_url': (
-                reverse('client_exclusive_reports')
-                if slug == 'special-report'
-                else reverse('client_publication_series', args=[slug])
-            ),
-        }
-        for title, slug, field in SERIES_NOTES_SECTIONS
-        if getattr(home_page_settings, field)
-    ]
+            'client_list_url': reverse('client_publication_series', args=[slug]),
+        })
+        notes_ctx_by_section[section] = ctx
+        if getattr(home_page_settings, field):
+            filtered_notes.append(ctx)
 
     if _is_ajax(request):
         section = request.GET.get('home_section', 'daily').strip() or 'daily'
-        ctx = weekly_notes_ctx if section == 'weekly' else daily_notes_ctx
-        ctx['is_home_preview'] = is_home_preview
+        ctx = notes_ctx_by_section.get(section) or notes_ctx_by_section['daily']
         return None, render(request, 'client_portal/partials/latest_research.html', ctx)
 
     featured_asset_classes = [ac for ac in asset_classes if ac.show_on_home]
@@ -357,17 +341,13 @@ def assemble_home_context(request, reports_qs, home_url_name='client_home', is_h
         'other_reports': other_reports,
         'hero_stats': hero_stats,
         'hero_chart': hero_chart,
-        'daily_notes_ctx': daily_notes_ctx,
-        'weekly_notes_ctx': weekly_notes_ctx,
-        'series_notes': series_notes,
+        'filtered_notes': filtered_notes,
         'asset_classes': asset_classes,
         'featured_asset_classes': featured_asset_classes,
         'ticker': ticker,
         'saved_report_ids': saved_report_ids,
         'home_page_settings': home_page_settings,
         'is_home_preview': is_home_preview,
-        'daily_preview_list_url': preview_list_urls.get(DAILY_NOTE_SLUG, fallback_list_url),
-        'weekly_preview_list_url': preview_list_urls.get(WEEKLY_NOTE_SLUG, fallback_list_url),
     }, None
 
 

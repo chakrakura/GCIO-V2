@@ -12,7 +12,6 @@ class HomePageSettingsAdmin(admin.ModelAdmin):
         'show_monthly_notes',
         'show_quarterly_notes',
         'show_annual_notes',
-        'show_special_reports',
         'show_research_by_asset_class',
         'updated_at',
     )

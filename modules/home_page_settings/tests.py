@@ -33,7 +33,6 @@ class HomePageSettingsTests(TestCase):
         self.assertTrue(settings_obj.show_monthly_notes)
         self.assertTrue(settings_obj.show_quarterly_notes)
         self.assertTrue(settings_obj.show_annual_notes)
-        self.assertTrue(settings_obj.show_special_reports)
         self.assertTrue(settings_obj.show_research_by_asset_class)
 
     def test_super_admin_can_view_and_save(self):
@@ -48,8 +47,8 @@ class HomePageSettingsTests(TestCase):
         self.assertContains(response, 'Monthly Digest')
         self.assertContains(response, 'Quarterly Review')
         self.assertContains(response, 'Annual Outlook')
-        self.assertContains(response, 'Special Report')
         self.assertContains(response, 'Research by Asset Class')
+        self.assertNotContains(response, 'Special Report')
         self.assertNotContains(response, 'Weekly Notes')
         self.assertNotContains(response, 'Monthly Notes')
 
@@ -62,7 +61,6 @@ class HomePageSettingsTests(TestCase):
         self.assertTrue(settings_obj.show_featured_research)
         self.assertTrue(settings_obj.show_latest_research)
         self.assertFalse(settings_obj.show_weekly_notes)
-        self.assertFalse(settings_obj.show_special_reports)
         self.assertFalse(settings_obj.show_research_by_asset_class)
 
     def test_administrator_cannot_modify(self):
@@ -71,6 +69,9 @@ class HomePageSettingsTests(TestCase):
         self.assertEqual(response.status_code, 302)
 
     def test_client_home_shows_daily_and_weekly_notes(self):
+        from modules.taxonomy.models import AssetClass
+        AssetClass.objects.create(name='Equities')
+
         self.client.force_login(self.client_user)
         response = self.client.get(reverse('client_home'))
         self.assertEqual(response.status_code, 200)
@@ -79,11 +80,14 @@ class HomePageSettingsTests(TestCase):
         self.assertContains(response, '>Monthly Digest<')
         self.assertContains(response, '>Quarterly Review<')
         self.assertContains(response, '>Annual Outlook<')
-        self.assertContains(response, '>Special Report<')
         self.assertContains(response, 'All')
+        self.assertContains(response, 'monthly_asset_class')
+        self.assertContains(response, 'quarterly_asset_class')
+        self.assertContains(response, 'annual_asset_class')
         self.assertNotContains(response, '>Latest Research<')
         self.assertNotContains(response, '>Weekly Notes<')
         self.assertNotContains(response, '>Monthly Notes<')
+        self.assertNotContains(response, '>Special Report<')
 
     def test_client_home_hides_disabled_sections(self):
         settings_obj = HomePageSettings.load()
@@ -118,7 +122,7 @@ class HomePageSettingsTests(TestCase):
         self.assertContains(response, '>Featured Research<')
         self.assertContains(response, '>Daily Note<')
         self.assertContains(response, '>Weekly Insight<')
-        self.assertContains(response, '>Special Report<')
+        self.assertContains(response, '>Monthly Digest<')
         self.assertContains(response, 'Live preview of the client portal Home page')
         self.assertContains(response, reverse('home_page_settings'))
 

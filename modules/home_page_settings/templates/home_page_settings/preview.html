@@ -1,0 +1,31 @@
+{% extends "console/base.html" %}
+
+{% block title %}Client Home preview{% endblock %}
+
+{% block breadcrumb %}Settings &middot; Client Home preview{% endblock %}
+
+{% block content %}
+  <div class="flex items-start justify-between gap-5 mb-5">
+    <div>
+      <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">SETTINGS</div>
+      <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Client Home preview</h1>
+      <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-2xl">This is the same Home layout clients see on the research portal, using the current Home Page Settings.</p>
+    </div>
+    <a href="{% url 'home_page_settings' %}" class="inline-flex items-center gap-2 border border-gray-200 dark:border-gray-700 text-blue-900 dark:text-blue-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap cursor-pointer">
+      Edit sections
+    </a>
+  </div>
+
+  <div class="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-xl px-4 py-3.5 text-[13.5px] text-gray-600 dark:text-gray-400 mb-6">
+    <svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+    <div>
+      Hidden sections match Home Page Settings. Report cards open in Content so you stay in the Admin Console. Individual clients only see reports shared with their organisation; this preview shows all published reports from the last 12 months.
+    </div>
+  </div>
+
+  {% include "client_portal/partials/home_body.html" %}
+{% endblock %}
+
+{% block extra_scripts %}
+  {% include "client_portal/partials/home_notes_script.html" %}
+{% endblock %}

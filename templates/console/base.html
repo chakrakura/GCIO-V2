@@ -120,6 +120,17 @@
       </a>
       {% endif %}
 
+      {% if request.user.profile.role.can_manage_roles %}
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'home_page_settings' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'home_page_settings' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <span class="sidebar-label">Home Page Settings</span>
+      </a>
+      <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'home_page_preview' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'client_home_preview' %}">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+        <span class="sidebar-label">Client Home preview</span>
+      </a>
+      {% endif %}
+
       {% if request.user.profile.role.can_manage_market_data %}
       <a class="nav-item flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 {% if active_nav == 'market_data' %}bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-semibold border border-blue-100 dark:border-blue-800{% else %}text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100{% endif %}" href="{% url 'market_data' %}">
         <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>

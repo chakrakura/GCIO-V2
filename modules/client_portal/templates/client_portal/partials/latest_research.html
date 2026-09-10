@@ -1,15 +1,15 @@
-{% if asset_classes %}
+{% if asset_classes and not hide_notes_filters %}
 <div class="flex flex-wrap gap-2 mb-5">
-  <a href="{% url 'client_home' %}" class="latest-research-tab px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold {% if not asset_class_id %}bg-blue-900 text-white{% else %}bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">All</a>
+  <a href="{{ notes_all_url }}" data-section="{{ notes_section }}" class="home-notes-tab latest-research-tab px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold {% if not asset_class_id %}bg-blue-900 text-white{% else %}bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">All</a>
   {% for ac in asset_classes %}
-  <a href="?asset_class={{ ac.id }}" class="latest-research-tab px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold {% if asset_class_id == ac.id|stringformat:'s' %}bg-blue-900 text-white{% else %}bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">{{ ac.name }}</a>
+  <a href="?{{ notes_filter_param }}={{ ac.id }}{{ notes_query_suffix }}" data-section="{{ notes_section }}" class="home-notes-tab latest-research-tab px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold {% if asset_class_id == ac.id|stringformat:'s' %}bg-blue-900 text-white{% else %}bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">{{ ac.name }}</a>
   {% endfor %}
 </div>
 {% endif %}
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
-  {% for report in latest_research %}
-  <a href="{% url 'client_report_detail' report.id %}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+  {% for report in reports %}
+  <a href="{% if is_home_preview %}{% url 'report_edit' report.id %}{% else %}{% url 'client_report_detail' report.id %}{% endif %}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
     <div class="flex items-center justify-between mb-2">
       <span class="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-gray-400 dark:text-gray-500 tracking-wider">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>

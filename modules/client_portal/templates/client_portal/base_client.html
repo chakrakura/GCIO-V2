@@ -237,7 +237,7 @@
   });
 
   // Save/unsave a report — delegated on document so it works for content
-  // swapped in later via AJAX (e.g. the Latest Research filter tabs).
+  // swapped in later via AJAX (e.g. the Daily Note / Weekly Notes filter tabs).
   document.addEventListener('click', async (e) => {
     const btn = e.target.closest('.save-toggle-btn');
     if (!btn) return;

@@ -1,0 +1,142 @@
+{% extends "console/base.html" %}
+
+{% block title %}Home Page Settings{% endblock %}
+
+{% block breadcrumb %}Settings &middot; Home Page Settings{% endblock %}
+
+{% block extra_style %}
+<style>
+  .home-toggle {
+    position: relative;
+    display: inline-flex;
+    width: 2.75rem;
+    height: 1.5rem;
+    flex-shrink: 0;
+  }
+  .home-toggle input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+  }
+  .home-toggle-track {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 9999px;
+    background: #e5e7eb;
+    transition: background-color 200ms;
+  }
+  .dark .home-toggle-track {
+    background: #374151;
+  }
+  .home-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+    pointer-events: none;
+    transition: transform 200ms;
+  }
+  .home-toggle input:checked + .home-toggle-track {
+    background: #1e3a8a;
+  }
+  .home-toggle input:checked ~ .home-toggle-thumb {
+    transform: translateX(1.25rem);
+  }
+  .home-toggle input:focus-visible + .home-toggle-track {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1e3a8a;
+  }
+  .dark .home-toggle input:focus-visible + .home-toggle-track {
+    box-shadow: 0 0 0 2px #1f2937, 0 0 0 4px #93c5fd;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .home-toggle-track,
+    .home-toggle-thumb {
+      transition: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+  <form method="post" id="home-page-settings-form">
+    {% csrf_token %}
+
+    <div class="flex items-start justify-between gap-5 mb-5">
+      <div>
+        <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">SETTINGS</div>
+        <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Home Page Settings</h1>
+        <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Choose which sections appear on the client research portal Home page. These settings apply to every client user.</p>
+      </div>
+      <div class="flex items-center gap-2.5 shrink-0">
+        <a href="{% url 'client_home_preview' %}" class="inline-flex items-center gap-2 border border-gray-200 dark:border-gray-700 text-blue-900 dark:text-blue-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview client Home
+        </a>
+        <button type="submit" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold whitespace-nowrap cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+          Save settings
+        </button>
+      </div>
+    </div>
+
+    <div class="border-b border-gray-200 dark:border-gray-700 mb-6"></div>
+
+    <div class="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 rounded-xl px-4 py-3.5 text-[13.5px] text-gray-600 dark:text-gray-400 mb-6">
+      <svg class="w-4 h-4 text-blue-700 dark:text-blue-400 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>
+      Turning a section off hides it completely on <span class="font-semibold text-gray-700 dark:text-gray-300">/portal</span>. Content elsewhere on the portal is unchanged.
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+      {% for toggle in section_toggles %}
+      <div class="flex items-start justify-between gap-6 px-6 py-5 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-700{% endif %}">
+        <div class="min-w-0">
+          <label class="block font-semibold text-[14.5px] text-blue-900 dark:text-blue-300 cursor-pointer" for="{{ toggle.field }}">{{ toggle.label }}</label>
+          <p class="text-[13px] text-gray-500 dark:text-gray-400 mt-1">{{ toggle.help }}</p>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="text-[11px] font-bold tracking-wider {% if toggle.on %}text-green-700 dark:text-green-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" data-toggle-label>{% if toggle.on %}ON{% else %}OFF{% endif %}</span>
+          <span class="home-toggle">
+            <input type="checkbox" name="{{ toggle.field }}" id="{{ toggle.field }}" {% if toggle.on %}checked{% endif %} aria-label="{{ toggle.label }}">
+            <span class="home-toggle-track" aria-hidden="true"></span>
+            <span class="home-toggle-thumb" aria-hidden="true"></span>
+          </span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.querySelectorAll('.home-toggle input').forEach((input) => {
+    input.addEventListener('change', () => {
+      const label = input.closest('.flex.items-center')?.querySelector('[data-toggle-label]');
+      if (!label) return;
+      const on = input.checked;
+      label.textContent = on ? 'ON' : 'OFF';
+      label.classList.toggle('text-green-700', on);
+      label.classList.toggle('dark:text-green-400', on);
+      label.classList.toggle('text-gray-400', !on);
+      label.classList.toggle('dark:text-gray-500', !on);
+    });
+  });
+
+  const form = document.getElementById('home-page-settings-form');
+  form.addEventListener('submit', () => {
+    const btn = form.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.classList.add('opacity-70', 'cursor-not-allowed');
+  });
+</script>
+{% endblock %}

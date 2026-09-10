@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
+from modules.home_page_settings.models import HomePageSettings
 from modules.market_data.models import MarketInstrument
 from modules.reports.models import Report, SavedReport
 from modules.taxonomy.models import AssetClass, CountryRegion, PublicationType
@@ -193,17 +194,94 @@ def _pdf_page_count(pdf_path):
         return None
 
 
-@login_required
-def client_home(request):
-    if not _is_client_role(request.user):
-        return redirect('dashboard')
+HOME_NOTES_LIMIT = 3
+DAILY_NOTE_SLUG = 'daily-note'
+WEEKLY_NOTE_SLUG = 'weekly-insight'
+SERIES_NOTES_SECTIONS = (
+    ('Monthly Digest', 'monthly-digest', 'show_monthly_notes'),
+    ('Quarterly Review', 'quarterly-review', 'show_quarterly_notes'),
+    ('Annual Outlook', 'annual-outlook', 'show_annual_notes'),
+    ('Special Report', 'special-report', 'show_special_reports'),
+)
 
-    # Featured Research is curated by staff via the "Feature on client home page"
-    # checkbox on the report form — shows the 3 most recent reports marked featured.
-    reports = list(_client_reports_current(request.user).filter(is_featured=True)[:3])
-    featured = reports[0] if reports else None
-    other_reports = reports[1:3]
-    featured_ids = [r.id for r in reports[:3]]
+
+def _notes_for_publication_type(user, slug, asset_class_id, limit=HOME_NOTES_LIMIT, reports_qs=None):
+    """Newest-first reports of one publication type, optionally filtered by asset class."""
+    qs = reports_qs if reports_qs is not None else _client_reports_current(user)
+    qs = qs.filter(publication_type__slug=slug)
+    if asset_class_id:
+        qs = qs.filter(asset_classes__id=asset_class_id)
+    reports = list(qs.prefetch_related('asset_classes', 'tags')[:limit])
+    for report in reports:
+        report.reading_minutes = _estimated_reading_minutes(report)
+        report.dot_color = _dot_color(report.publication_type)
+    return reports
+
+
+def _home_notes_filter_urls(request, filter_param, home_url_name='client_home'):
+    """Build All/tab URLs for one Home notes section, preserving the other section's filter."""
+    params = request.GET.copy()
+    params.pop('home_section', None)
+    all_params = params.copy()
+    all_params.pop(filter_param, None)
+    all_url = reverse(home_url_name)
+    companion = all_params.urlencode()
+    if companion:
+        all_url = f'{all_url}?{companion}'
+    return all_url, f'&{companion}' if companion else ''
+
+
+def _home_notes_context(
+    request, user, asset_classes, saved_report_ids, *, section, slug, filter_param, selected_id,
+    reports_qs=None, home_url_name='client_home', is_home_preview=False,
+):
+    all_url, query_suffix = _home_notes_filter_urls(request, filter_param, home_url_name=home_url_name)
+    reports = _notes_for_publication_type(user, slug, selected_id, reports_qs=reports_qs)
+    return {
+        'reports': reports,
+        'latest_research': reports,
+        'asset_classes': asset_classes,
+        'asset_class_id': selected_id,
+        'saved_report_ids': saved_report_ids,
+        'notes_section': section,
+        'notes_filter_param': filter_param,
+        'notes_all_url': all_url,
+        'notes_query_suffix': query_suffix,
+        'is_home_preview': is_home_preview,
+    }
+
+
+def _all_published_current():
+    """Published reports in the client visibility window, not scoped to an organisation."""
+    return Report.objects.filter(
+        status=Report.STATUS_PUBLISHED,
+        published_at__gte=timezone.now() - CLIENT_VISIBILITY_WINDOW,
+    ).distinct().select_related('author', 'publication_type').order_by('-published_at')
+
+
+def _home_greeting():
+    hour = timezone.localtime().hour
+    if hour < 12:
+        return 'morning'
+    if hour < 18:
+        return 'afternoon'
+    return 'evening'
+
+
+def _publication_type_list_urls(slugs):
+    ids = dict(PublicationType.objects.filter(slug__in=slugs).values_list('slug', 'id'))
+    list_url = reverse('report_list')
+    return {
+        slug: f'{list_url}?publication_type={ids[slug]}' if slug in ids else list_url
+        for slug in slugs
+    }
+
+
+def assemble_home_context(request, reports_qs, home_url_name='client_home', is_home_preview=False):
+    """Shared Home page payload used by the client portal and the Super Admin preview."""
+    featured_list = list(reports_qs.filter(is_featured=True)[:3])
+    featured = featured_list[0] if featured_list else None
+    other_reports = featured_list[1:3]
 
     if featured:
         featured.reading_minutes = _estimated_reading_minutes(featured)
@@ -217,47 +295,90 @@ def client_home(request):
     hero_stats = [i.as_ticker_tuple() for i in active_instruments if i.is_hero_stat]
     hero_chart = _build_hero_chart() if featured else None
 
-    asset_class_id = request.GET.get('asset_class', '').strip()
-    latest_qs = _client_reports_current(request.user).exclude(id__in=featured_ids).exclude(
-        publication_type__slug='special-report'
-    )
-    if asset_class_id:
-        latest_qs = latest_qs.filter(asset_classes__id=asset_class_id)
-    latest_research = list(latest_qs.prefetch_related('asset_classes', 'tags')[:6])
-    for report in latest_research:
-        report.reading_minutes = _estimated_reading_minutes(report)
-        report.dot_color = _dot_color(report.publication_type)
+    saved_report_ids = set() if is_home_preview else _saved_report_ids(request.user)
+    home_page_settings = HomePageSettings.load()
 
-    saved_report_ids = _saved_report_ids(request.user)
-
-    visible_report_ids = list(_client_reports_current(request.user).values_list('id', flat=True))
+    visible_report_ids = list(reports_qs.values_list('id', flat=True))
     asset_classes = list(AssetClass.objects.filter(is_active=True).annotate(
         report_count=Count(
             'reports', filter=Q(reports__id__in=visible_report_ids), distinct=True,
         )
     ))
 
+    daily_notes_ctx = _home_notes_context(
+        request, request.user, asset_classes, saved_report_ids,
+        section='daily', slug=DAILY_NOTE_SLUG, filter_param='asset_class',
+        selected_id=request.GET.get('asset_class', '').strip(),
+        reports_qs=reports_qs, home_url_name=home_url_name, is_home_preview=is_home_preview,
+    )
+    weekly_notes_ctx = _home_notes_context(
+        request, request.user, asset_classes, saved_report_ids,
+        section='weekly', slug=WEEKLY_NOTE_SLUG, filter_param='weekly_asset_class',
+        selected_id=request.GET.get('weekly_asset_class', '').strip(),
+        reports_qs=reports_qs, home_url_name=home_url_name, is_home_preview=is_home_preview,
+    )
+    preview_list_urls = {}
+    if is_home_preview:
+        preview_list_urls = _publication_type_list_urls([
+            DAILY_NOTE_SLUG,
+            WEEKLY_NOTE_SLUG,
+            *[slug for _, slug, _ in SERIES_NOTES_SECTIONS],
+        ])
+    fallback_list_url = reverse('report_list') if is_home_preview else ''
+
+    series_notes = [
+        {
+            'title': title,
+            'slug': slug,
+            'reports': _notes_for_publication_type(
+                request.user, slug, None, limit=HOME_NOTES_LIMIT, reports_qs=reports_qs,
+            ),
+            'preview_list_url': preview_list_urls.get(slug, fallback_list_url),
+            'client_list_url': (
+                reverse('client_exclusive_reports')
+                if slug == 'special-report'
+                else reverse('client_publication_series', args=[slug])
+            ),
+        }
+        for title, slug, field in SERIES_NOTES_SECTIONS
+        if getattr(home_page_settings, field)
+    ]
+
     if _is_ajax(request):
-        return render(request, 'client_portal/partials/latest_research.html', {
-            'latest_research': latest_research,
-            'asset_class_id': asset_class_id,
-            'asset_classes': asset_classes,
-            'saved_report_ids': saved_report_ids,
-        })
+        section = request.GET.get('home_section', 'daily').strip() or 'daily'
+        ctx = weekly_notes_ctx if section == 'weekly' else daily_notes_ctx
+        ctx['is_home_preview'] = is_home_preview
+        return None, render(request, 'client_portal/partials/latest_research.html', ctx)
 
-    # "Research by Asset Class" only shows classes staff opted in via show_on_home —
-    # the filter tabs above still list every active asset class regardless.
     featured_asset_classes = [ac for ac in asset_classes if ac.show_on_home]
-    for ac in featured_asset_classes:
-        ac.latest_report = _client_reports_current(request.user).filter(asset_classes=ac).first()
 
-    home_publication_types = list(PublicationType.objects.filter(is_active=True, show_on_home=True).annotate(
-        report_count=Count(
-            'reports', filter=Q(reports__id__in=visible_report_ids), distinct=True,
-        )
-    ))
-    for pt in home_publication_types:
-        pt.latest_report = _client_reports_current(request.user).filter(publication_type=pt).first()
+    return {
+        'featured': featured,
+        'other_reports': other_reports,
+        'hero_stats': hero_stats,
+        'hero_chart': hero_chart,
+        'daily_notes_ctx': daily_notes_ctx,
+        'weekly_notes_ctx': weekly_notes_ctx,
+        'series_notes': series_notes,
+        'asset_classes': asset_classes,
+        'featured_asset_classes': featured_asset_classes,
+        'ticker': ticker,
+        'saved_report_ids': saved_report_ids,
+        'home_page_settings': home_page_settings,
+        'is_home_preview': is_home_preview,
+        'daily_preview_list_url': preview_list_urls.get(DAILY_NOTE_SLUG, fallback_list_url),
+        'weekly_preview_list_url': preview_list_urls.get(WEEKLY_NOTE_SLUG, fallback_list_url),
+    }, None
+
+
+@login_required
+def client_home(request):
+    if not _is_client_role(request.user):
+        return redirect('dashboard')
+
+    context, ajax_response = assemble_home_context(request, _client_reports_current(request.user))
+    if ajax_response:
+        return ajax_response
 
     new_since_login = 0
     previous_login_raw = request.session.get('previous_login')
@@ -266,30 +387,12 @@ def client_home(request):
         if previous_login:
             new_since_login = _client_reports_current(request.user).filter(published_at__gt=previous_login).count()
 
-    hour = timezone.localtime().hour
-    if hour < 12:
-        greeting = 'morning'
-    elif hour < 18:
-        greeting = 'afternoon'
-    else:
-        greeting = 'evening'
-
-    return render(request, 'client_portal/home.html', {
+    context.update({
         'active_nav': 'home',
-        'featured': featured,
-        'other_reports': other_reports,
-        'hero_stats': hero_stats,
-        'hero_chart': hero_chart,
-        'latest_research': latest_research,
-        'asset_class_id': asset_class_id,
-        'asset_classes': asset_classes,
-        'featured_asset_classes': featured_asset_classes,
-        'home_publication_types': home_publication_types,
         'new_since_login': new_since_login,
-        'greeting': greeting,
-        'ticker': ticker,
-        'saved_report_ids': saved_report_ids,
+        'greeting': _home_greeting(),
     })
+    return render(request, 'client_portal/home.html', context)
 
 
 SORT_OPTIONS = {

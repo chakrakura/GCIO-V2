@@ -28,6 +28,7 @@ urlpatterns = [
     path('taxonomy/', include('modules.taxonomy.urls')),
     path('reports/', include('modules.reports.urls')),
     path('ai-integration/', include('modules.ai_integration.urls')),
+    path('home-page-settings/', include('modules.home_page_settings.urls')),
     path('market-data/', include('modules.market_data.urls')),
     path('portal/', include('modules.client_portal.urls')),
     path('', include('modules.login.urls')),

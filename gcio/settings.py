@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'modules.ai_integration',
     'modules.client_portal',
     'modules.market_data',
+    'modules.home_page_settings',
 ]
 
 MIDDLEWARE = [

@@ -41,7 +41,7 @@ class ReportForm(forms.ModelForm):
             'description': forms.Textarea(attrs={
                 'class': 'canvas-dek-input w-full italic text-lg text-gray-500 dark:text-gray-400 bg-transparent border-none focus:outline-none focus:ring-0 p-0 resize-none placeholder-gray-300 dark:placeholder-gray-600',
                 'rows': 2,
-                'placeholder': 'One or two sentences summarising the report. Shown on cards and above the article.',
+                'placeholder': 'One or two sentences summarising the content. Shown on cards and above the article.',
             }),
             'body': forms.Textarea(attrs={'id': 'body-input', 'class': 'hidden'}),
             'status': forms.Select(attrs={'class': 'hidden'}),
@@ -97,17 +97,17 @@ class ReportForm(forms.ModelForm):
 
         if content_type == Report.CONTENT_PDF:
             if not file_upload:
-                self.add_error('file_upload', 'A PDF file is required for PDF reports.')
+                self.add_error('file_upload', 'A PDF file is required for PDF content.')
             else:
                 name = file_upload.name.lower()
                 if not name.endswith('.pdf'):
-                    self.add_error('file_upload', 'Selected file format is invalid. PDF reports require a .pdf file.')
+                    self.add_error('file_upload', 'Selected file format is invalid. PDF content requires a .pdf file.')
         elif content_type == Report.CONTENT_PRESENTATION:
             if not file_upload:
-                self.add_error('file_upload', 'A presentation file (.pptx or .ppt) is required for Presentation reports.')
+                self.add_error('file_upload', 'A presentation file (.pptx or .ppt) is required for Presentation content.')
             else:
                 name = file_upload.name.lower()
                 if not (name.endswith('.pptx') or name.endswith('.ppt')):
-                    self.add_error('file_upload', 'Selected file format is invalid. Presentation reports require a .pptx or .ppt file.')
+                    self.add_error('file_upload', 'Selected file format is invalid. Presentation content requires a .pptx or .ppt file.')
 
         return cleaned_data

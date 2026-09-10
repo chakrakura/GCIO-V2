@@ -40,19 +40,23 @@ class ReportFormEditorTests(TestCase):
             page.set_content(html, wait_until='domcontentloaded')
             page.wait_for_selector('#block-editor .block-text')
 
-            def add_line(index, text):
+            def add_section(index, text):
                 target = page.locator('.block-text').nth(index)
                 target.click()
                 expect(target).to_be_focused()
                 target.type(text)
 
-            add_line(0, 'alpha')
-            page.keyboard.press('Enter')
+            add_section(0, 'alpha')
+            page.locator('.insert-gap').nth(0).hover()
+            page.locator('.insert-plus').nth(0).click()
+            page.locator('.insert-gap.is-open .insert-picker button', has_text='Text').click()
             expect(page.locator('.editor-block')).to_have_count(2)
-            add_line(1, 'bravo')
-            page.keyboard.press('Enter')
+            add_section(1, 'bravo')
+            page.locator('.insert-gap').nth(1).hover()
+            page.locator('.insert-plus').nth(1).click()
+            page.locator('.insert-gap.is-open .insert-picker button', has_text='Text').click()
             expect(page.locator('.editor-block')).to_have_count(3)
-            add_line(2, 'charlie')
+            add_section(2, 'charlie')
 
             texts = page.locator('.block-text').all_inner_texts()
             self.assertEqual([t.strip() for t in texts], ['alpha', 'bravo', 'charlie'])
@@ -93,7 +97,7 @@ class ReportFormEditorTests(TestCase):
 
             page.locator('.insert-gap').nth(0).hover()
             page.locator('.insert-plus').nth(0).click()
-            page.locator('.insert-picker button', has_text='Text').click()
+            page.locator('.insert-gap.is-open .insert-picker button', has_text='Text').click()
 
             expect(page.locator('.editor-block')).to_have_count(2)
             second = page.locator('.block-text').nth(1)
@@ -114,5 +118,33 @@ class ReportFormEditorTests(TestCase):
             page.locator('.editor-block').nth(1).locator('[data-block-action="delete"]').click()
             expect(page.locator('.editor-block')).to_have_count(1)
             self.assertEqual(page.locator('.block-text').inner_text().strip(), 'alpha')
+
+            browser.close()
+
+    def test_enter_stays_inside_the_same_section(self):
+        try:
+            from playwright.sync_api import expect, sync_playwright
+        except ImportError:
+            self.skipTest('playwright is not installed')
+
+        self.client.force_login(self.user)
+        html = self.client.get(reverse('report_add')).content.decode()
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page()
+            page.set_content(html, wait_until='domcontentloaded')
+            page.wait_for_selector('#block-editor .block-text')
+
+            first = page.locator('.block-text').nth(0)
+            first.click()
+            first.type('alpha')
+            page.keyboard.press('Enter')
+            first.type('bravo')
+
+            expect(page.locator('.editor-block')).to_have_count(1)
+            text = page.locator('.block-text').inner_text()
+            self.assertIn('alpha', text)
+            self.assertIn('bravo', text)
 
             browser.close()

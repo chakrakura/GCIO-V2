@@ -1469,15 +1469,6 @@
 
   function bindEmptyBlockDelete(el, index, block) {
     el.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && (block.type === 'text' || block.type === 'heading')) {
-        e.preventDefault();
-        block.html = el.innerHTML;
-        const newBlock = { id: newBlockId(), type: 'text', html: '', raw: false };
-        blocks.splice(index + 1, 0, newBlock);
-        renderBlocks();
-        focusBlock(index + 1);
-        return;
-      }
       if (e.key !== 'Backspace' && e.key !== 'Delete') return;
       const liveEmpty = !((el.innerText || el.textContent || '').replace(/\u00a0/g, ' ').trim());
       if ((!liveEmpty && !isBlockEmpty(block)) || blocks.length <= 1) return;

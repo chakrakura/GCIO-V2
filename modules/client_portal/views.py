@@ -16,7 +16,7 @@ from django.views.decorators.http import require_POST
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
-from modules.home_page_settings.models import HomePageSettings
+from modules.home_page_settings.models import HomePageSettings, TOP_NOTES_DEFAULT
 from modules.market_data.models import MarketInstrument
 from modules.reports.models import Report, SavedReport
 from modules.taxonomy.models import AssetClass, CountryRegion, PublicationType
@@ -194,7 +194,7 @@ def _pdf_page_count(pdf_path):
         return None
 
 
-HOME_NOTES_LIMIT = 3
+HOME_NOTES_LIMIT = TOP_NOTES_DEFAULT
 FILTERED_NOTES_SECTIONS = (
     ('daily', 'Daily Note', 'daily-note', 'show_latest_research', 'asset_class', 'daily-note-container'),
     ('weekly', 'Weekly Insight', 'weekly-insight', 'show_weekly_notes', 'weekly_asset_class', 'weekly-notes-container'),
@@ -232,10 +232,10 @@ def _home_notes_filter_urls(request, filter_param, home_url_name='client_home'):
 
 def _home_notes_context(
     request, user, asset_classes, saved_report_ids, *, section, slug, filter_param, selected_id,
-    reports_qs=None, home_url_name='client_home', is_home_preview=False,
+    reports_qs=None, home_url_name='client_home', is_home_preview=False, limit=HOME_NOTES_LIMIT,
 ):
     all_url, query_suffix = _home_notes_filter_urls(request, filter_param, home_url_name=home_url_name)
-    reports = _notes_for_publication_type(user, slug, selected_id, reports_qs=reports_qs)
+    reports = _notes_for_publication_type(user, slug, selected_id, limit=limit, reports_qs=reports_qs)
     return {
         'reports': reports,
         'latest_research': reports,
@@ -317,6 +317,7 @@ def assemble_home_context(request, reports_qs, home_url_name='client_home', is_h
             section=section, slug=slug, filter_param=filter_param,
             selected_id=request.GET.get(filter_param, '').strip(),
             reports_qs=reports_qs, home_url_name=home_url_name, is_home_preview=is_home_preview,
+            limit=home_page_settings.top_notes_for_toggle(field),
         )
         ctx.update({
             'title': home_page_settings.heading_for_toggle(field),
@@ -324,7 +325,6 @@ def assemble_home_context(request, reports_qs, home_url_name='client_home', is_h
             'container_id': container_id,
             'preview_list_url': preview_list_urls.get(slug, fallback_list_url),
             'client_list_url': reverse('client_publication_series', args=[slug]),
-            'cards_per_row': home_page_settings.cards_per_row_for_toggle(field),
         })
         notes_ctx_by_section[section] = ctx
         if getattr(home_page_settings, field):

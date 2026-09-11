@@ -76,7 +76,7 @@
       <div>
         <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">SETTINGS</div>
         <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Home Page Settings</h1>
-        <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Choose which sections appear on the client research portal Home page. Click Edit to change a section’s name, cards per row, and whether it is shown on /portal.</p>
+        <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Choose which sections appear on the client research portal Home page. Click Edit to change a section’s name, how many cards to show, and whether it is shown on /portal.</p>
       </div>
       <div id="settings-save-status" class="text-[13px] font-semibold text-gray-400 dark:text-gray-500 whitespace-nowrap pt-8" aria-live="polite"></div>
     </div>
@@ -94,17 +94,19 @@
            data-section-row
            data-field="{{ toggle.field }}"
            data-title-field="{{ toggle.title_field }}"
-           data-cards-field="{{ toggle.cards_field }}"
+           data-top-notes-field="{{ toggle.top_notes_field }}"
            data-default-label="{{ toggle.default_label }}"
-           data-cards-per-row="{{ toggle.cards_per_row }}"
+           {% if toggle.uses_top_notes %}data-top-notes="{{ toggle.top_notes }}"{% endif %}
            data-on="{% if toggle.on %}1{% else %}0{% endif %}"
-           data-uses-card-grid="{% if toggle.uses_card_grid %}1{% else %}0{% endif %}">
+           data-uses-top-notes="{% if toggle.uses_top_notes %}1{% else %}0{% endif %}">
         <div class="min-w-0">
           <span class="block font-semibold text-[13.5px] text-gray-900 dark:text-gray-100 truncate" data-title-display>{{ toggle.label }}</span>
           <p class="text-[12.5px] text-gray-500 dark:text-gray-400 mt-0.5" data-section-help>{{ toggle.help }}</p>
         </div>
         <div class="flex items-center gap-5 shrink-0">
-          <span class="text-[12.5px] font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap" data-cards-display>{{ toggle.cards_per_row }} per row</span>
+          {% if toggle.uses_top_notes %}
+          <span class="text-[12.5px] font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap" data-top-notes-display>{{ toggle.top_notes }} cards</span>
+          {% endif %}
           {% if toggle.on %}
           <span class="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-green-700 dark:text-green-400" data-toggle-label><span class="w-1.5 h-1.5 rounded-full bg-current"></span>Active</span>
           {% else %}
@@ -134,20 +136,16 @@
           <label for="section-edit-name" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Name *</label>
           <input type="text" id="section-edit-name" maxlength="{{ heading_max_length }}" class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
         </div>
-        <div>
-          <label for="section-edit-cards" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Cards per row</label>
-          <select id="section-edit-cards" class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 cursor-pointer">
-            {% for n in cards_per_row_choices %}
-            <option value="{{ n }}">{{ n }}</option>
-            {% endfor %}
-          </select>
-          <p id="section-edit-cards-note" class="hidden text-[12.5px] text-gray-500 dark:text-gray-400 mt-2">Featured Research keeps its existing hero and sidebar layout. This value is saved for the section but does not convert it into the normal card grid.</p>
+        <div id="section-edit-top-notes-wrap">
+          <label for="section-edit-top-notes" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Cards</label>
+          <div class="flex items-center gap-2.5">
+            <input type="number" id="section-edit-top-notes" min="{{ top_notes_min }}" max="{{ top_notes_max }}" step="1" inputmode="numeric" class="w-24 px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+            <span class="text-sm font-semibold text-gray-500 dark:text-gray-400">cards</span>
+          </div>
+          <p class="text-[12.5px] text-gray-500 dark:text-gray-400 mt-2">Newest notes shown on the client Home page. More notes stay available under View more.</p>
         </div>
         <div class="flex items-center justify-between gap-4 pt-1">
-          <div>
-            <div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</div>
-            <p class="text-[12.5px] text-gray-500 dark:text-gray-400 mt-0.5">Show this section on the Home page</p>
-          </div>
+          <p class="text-[12.5px] text-gray-500 dark:text-gray-400">Show this section on the Home page</p>
           <div class="flex items-center gap-3">
             <span id="section-edit-status-label" class="text-[11px] font-bold tracking-wider text-green-700 dark:text-green-400">ON</span>
             <span class="home-toggle">
@@ -177,11 +175,11 @@
   const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
   const modal = document.getElementById('section-edit-modal');
   const nameInput = document.getElementById('section-edit-name');
-  const cardsSelect = document.getElementById('section-edit-cards');
+  const topNotesSelect = document.getElementById('section-edit-top-notes');
+  const topNotesWrap = document.getElementById('section-edit-top-notes-wrap');
   const enabledInput = document.getElementById('section-edit-enabled');
   const statusLabel = document.getElementById('section-edit-status-label');
   const helpEl = document.getElementById('section-edit-help');
-  const cardsNote = document.getElementById('section-edit-cards-note');
   const saveBtn = document.getElementById('section-edit-save');
   let activeRow = null;
 
@@ -219,10 +217,11 @@
     document.getElementById('section-edit-title').textContent = 'Edit ' + (row.dataset.defaultLabel || 'section');
     helpEl.textContent = row.querySelector('[data-section-help]').textContent.trim();
     nameInput.value = title;
-    cardsSelect.value = row.dataset.cardsPerRow || '2';
+    const usesTopNotes = row.dataset.usesTopNotes === '1';
+    topNotesWrap.classList.toggle('hidden', !usesTopNotes);
+    if (usesTopNotes) topNotesSelect.value = row.dataset.topNotes || '6';
     enabledInput.checked = row.dataset.on === '1';
     setModalStatusLabel(enabledInput.checked);
-    cardsNote.classList.toggle('hidden', row.dataset.usesCardGrid !== '0');
     modal.classList.remove('hidden');
     nameInput.focus();
     nameInput.select();
@@ -265,9 +264,11 @@
         action: 'save_section',
         field: row.dataset.field,
         title: nameInput.value.trim(),
-        cards_per_row: cardsSelect.value,
         enabled: enabledInput.checked ? 'on' : 'off',
       });
+      if (row.dataset.usesTopNotes === '1') {
+        body.set('top_notes', topNotesSelect.value);
+      }
       const response = await fetch(form.action || window.location.href, {
         method: 'POST',
         headers: {
@@ -280,11 +281,13 @@
       const data = await response.json();
       if (!data.ok) throw new Error('Save failed');
       const label = data.label || row.dataset.defaultLabel;
-      const cards = String(data.cards_per_row || cardsSelect.value);
       const on = !!data.on;
       row.querySelector('[data-title-display]').textContent = label;
-      row.querySelector('[data-cards-display]').textContent = cards + ' per row';
-      row.dataset.cardsPerRow = cards;
+      const topNotesDisplay = row.querySelector('[data-top-notes-display]');
+      if (topNotesDisplay && data.top_notes != null) {
+        topNotesDisplay.textContent = data.top_notes + ' cards';
+        row.dataset.topNotes = String(data.top_notes);
+      }
       setRowStatus(row, on);
       setStatus('Saved', 'saved');
       closeModal();

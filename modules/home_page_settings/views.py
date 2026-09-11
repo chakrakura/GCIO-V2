@@ -12,15 +12,16 @@ from modules.roles.decorators import permission_required
 from modules.users.activity import log_activity
 
 from .models import (
-    CARDS_PER_ROW_CHOICES,
-    CARDS_PER_ROW_FIELD_BY_TOGGLE,
-    CARDS_PER_ROW_FIELDS,
     HEADING_MAX_LENGTH,
     SECTION_HEADINGS,
     TITLE_FIELD_BY_TOGGLE,
     TITLE_FIELDS,
+    TOP_NOTES_FIELD_BY_TOGGLE,
+    TOP_NOTES_FIELDS,
+    TOP_NOTES_MAX,
+    TOP_NOTES_MIN,
     HomePageSettings,
-    normalize_cards_per_row,
+    normalize_top_notes,
 )
 
 SECTION_FIELDS = tuple(toggle for toggle, _, _ in SECTION_HEADINGS)
@@ -45,14 +46,16 @@ def home_page_settings_view(request):
         action = request.POST.get('action')
         if action == 'save_section' and field in SECTION_FIELDS:
             title_field = TITLE_FIELD_BY_TOGGLE[field]
-            cards_field = CARDS_PER_ROW_FIELD_BY_TOGGLE[field]
             title = (request.POST.get('title') or '').strip()[:HEADING_MAX_LENGTH]
-            cards = normalize_cards_per_row(request.POST.get('cards_per_row'))
             enabled = request.POST.get('enabled') == 'on'
             setattr(settings_obj, title_field, title)
-            setattr(settings_obj, cards_field, cards)
             setattr(settings_obj, field, enabled)
-            settings_obj.save(update_fields=[title_field, cards_field, field, 'updated_at'])
+            update_fields = [title_field, field, 'updated_at']
+            if field in TOP_NOTES_FIELD_BY_TOGGLE:
+                top_field = TOP_NOTES_FIELD_BY_TOGGLE[field]
+                setattr(settings_obj, top_field, normalize_top_notes(request.POST.get('top_notes')))
+                update_fields.insert(-1, top_field)
+            settings_obj.save(update_fields=update_fields)
         elif field in SECTION_FIELDS:
             setattr(settings_obj, field, request.POST.get('value') == 'on')
             settings_obj.save(update_fields=[field, 'updated_at'])
@@ -60,8 +63,8 @@ def home_page_settings_view(request):
             value = (request.POST.get('value') or '').strip()[:HEADING_MAX_LENGTH]
             setattr(settings_obj, field, value)
             settings_obj.save(update_fields=[field, 'updated_at'])
-        elif field in CARDS_PER_ROW_FIELDS:
-            value = normalize_cards_per_row(request.POST.get('value'))
+        elif field in TOP_NOTES_FIELDS:
+            value = normalize_top_notes(request.POST.get('value'))
             setattr(settings_obj, field, value)
             settings_obj.save(update_fields=[field, 'updated_at'])
         else:
@@ -74,12 +77,13 @@ def home_page_settings_view(request):
             payload = {'ok': True}
             if action == 'save_section' and field in SECTION_FIELDS:
                 payload['label'] = settings_obj.heading_for_title_field(TITLE_FIELD_BY_TOGGLE[field])
-                payload['cards_per_row'] = settings_obj.cards_per_row_for_toggle(field)
                 payload['on'] = getattr(settings_obj, field)
+                if field in TOP_NOTES_FIELD_BY_TOGGLE:
+                    payload['top_notes'] = settings_obj.top_notes_for_toggle(field)
             if field in TITLE_FIELDS:
                 payload['label'] = settings_obj.heading_for_title_field(field)
-            if field in CARDS_PER_ROW_FIELDS:
-                payload['cards_per_row'] = settings_obj.cards_per_row_for(field)
+            if field in TOP_NOTES_FIELDS:
+                payload['top_notes'] = settings_obj.top_notes_for(field)
             return JsonResponse(payload)
         messages.success(request, 'Home page settings were saved.')
         return redirect('home_page_settings')
@@ -88,18 +92,19 @@ def home_page_settings_view(request):
         'active_nav': 'home_page_settings',
         'home_page_settings': settings_obj,
         'heading_max_length': HEADING_MAX_LENGTH,
-        'cards_per_row_choices': [value for value, _ in CARDS_PER_ROW_CHOICES],
+        'top_notes_min': TOP_NOTES_MIN,
+        'top_notes_max': TOP_NOTES_MAX,
         'section_toggles': [
             {
                 'field': toggle,
                 'title_field': title_field,
-                'cards_field': CARDS_PER_ROW_FIELD_BY_TOGGLE[toggle],
-                'cards_per_row': settings_obj.cards_per_row_for_toggle(toggle),
+                'top_notes_field': TOP_NOTES_FIELD_BY_TOGGLE.get(toggle, ''),
+                'top_notes': settings_obj.top_notes_for_toggle(toggle) if toggle in TOP_NOTES_FIELD_BY_TOGGLE else None,
                 'label': settings_obj.heading_for_title_field(title_field),
                 'default_label': default_label,
                 'help': HELP_BY_TOGGLE[toggle],
                 'on': getattr(settings_obj, toggle),
-                'uses_card_grid': toggle != 'show_featured_research',
+                'uses_top_notes': toggle in TOP_NOTES_FIELD_BY_TOGGLE,
             }
             for toggle, title_field, default_label in SECTION_HEADINGS
         ],

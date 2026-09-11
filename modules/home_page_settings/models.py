@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 HEADING_MAX_LENGTH = 80
@@ -18,34 +19,27 @@ DEFAULT_HEADING_BY_TOGGLE = {toggle: default for toggle, _, default in SECTION_H
 TITLE_FIELD_BY_TOGGLE = {toggle: title_field for toggle, title_field, _ in SECTION_HEADINGS}
 DEFAULT_HEADING_BY_TITLE_FIELD = {title_field: default for _, title_field, default in SECTION_HEADINGS}
 
-CARDS_PER_ROW_MIN = 1
-CARDS_PER_ROW_MAX = 10
-CARDS_PER_ROW_DEFAULT = 2
-CARDS_PER_ROW_CHOICES = tuple(
-    (n, str(n)) for n in range(CARDS_PER_ROW_MIN, CARDS_PER_ROW_MAX + 1)
-)
-CARDS_PER_ROW_FIELD_BY_TOGGLE = {
-    'show_featured_research': 'cards_per_row_featured_research',
-    'show_latest_research': 'cards_per_row_latest_research',
-    'show_weekly_notes': 'cards_per_row_weekly_notes',
-    'show_monthly_notes': 'cards_per_row_monthly_notes',
-    'show_quarterly_notes': 'cards_per_row_quarterly_notes',
-    'show_annual_notes': 'cards_per_row_annual_notes',
-    'show_research_by_asset_class': 'cards_per_row_research_by_asset_class',
+TOP_NOTES_DEFAULT = 6
+TOP_NOTES_MIN = 1
+TOP_NOTES_MAX = 50
+TOP_NOTES_FIELD_BY_TOGGLE = {
+    'show_latest_research': 'top_notes_latest_research',
+    'show_weekly_notes': 'top_notes_weekly_notes',
+    'show_monthly_notes': 'top_notes_monthly_notes',
+    'show_quarterly_notes': 'top_notes_quarterly_notes',
+    'show_annual_notes': 'top_notes_annual_notes',
 }
-CARDS_PER_ROW_FIELDS = tuple(
-    CARDS_PER_ROW_FIELD_BY_TOGGLE[toggle] for toggle, _, _ in SECTION_HEADINGS
-)
+TOP_NOTES_FIELDS = tuple(TOP_NOTES_FIELD_BY_TOGGLE.values())
 
 
-def normalize_cards_per_row(value):
+def normalize_top_notes(value):
     try:
         value = int(value)
     except (TypeError, ValueError):
-        return CARDS_PER_ROW_DEFAULT
-    if CARDS_PER_ROW_MIN <= value <= CARDS_PER_ROW_MAX:
+        return TOP_NOTES_DEFAULT
+    if TOP_NOTES_MIN <= value <= TOP_NOTES_MAX:
         return value
-    return CARDS_PER_ROW_DEFAULT
+    return TOP_NOTES_DEFAULT
 
 
 class HomePageSettings(models.Model):
@@ -69,26 +63,25 @@ class HomePageSettings(models.Model):
     title_annual_notes = models.CharField(max_length=HEADING_MAX_LENGTH, blank=True, default='')
     title_research_by_asset_class = models.CharField(max_length=HEADING_MAX_LENGTH, blank=True, default='')
 
-    cards_per_row_featured_research = models.PositiveSmallIntegerField(
-        default=CARDS_PER_ROW_DEFAULT, choices=CARDS_PER_ROW_CHOICES,
+    top_notes_latest_research = models.PositiveSmallIntegerField(
+        default=TOP_NOTES_DEFAULT,
+        validators=[MinValueValidator(TOP_NOTES_MIN), MaxValueValidator(TOP_NOTES_MAX)],
     )
-    cards_per_row_latest_research = models.PositiveSmallIntegerField(
-        default=CARDS_PER_ROW_DEFAULT, choices=CARDS_PER_ROW_CHOICES,
+    top_notes_weekly_notes = models.PositiveSmallIntegerField(
+        default=TOP_NOTES_DEFAULT,
+        validators=[MinValueValidator(TOP_NOTES_MIN), MaxValueValidator(TOP_NOTES_MAX)],
     )
-    cards_per_row_weekly_notes = models.PositiveSmallIntegerField(
-        default=CARDS_PER_ROW_DEFAULT, choices=CARDS_PER_ROW_CHOICES,
+    top_notes_monthly_notes = models.PositiveSmallIntegerField(
+        default=TOP_NOTES_DEFAULT,
+        validators=[MinValueValidator(TOP_NOTES_MIN), MaxValueValidator(TOP_NOTES_MAX)],
     )
-    cards_per_row_monthly_notes = models.PositiveSmallIntegerField(
-        default=CARDS_PER_ROW_DEFAULT, choices=CARDS_PER_ROW_CHOICES,
+    top_notes_quarterly_notes = models.PositiveSmallIntegerField(
+        default=TOP_NOTES_DEFAULT,
+        validators=[MinValueValidator(TOP_NOTES_MIN), MaxValueValidator(TOP_NOTES_MAX)],
     )
-    cards_per_row_quarterly_notes = models.PositiveSmallIntegerField(
-        default=CARDS_PER_ROW_DEFAULT, choices=CARDS_PER_ROW_CHOICES,
-    )
-    cards_per_row_annual_notes = models.PositiveSmallIntegerField(
-        default=CARDS_PER_ROW_DEFAULT, choices=CARDS_PER_ROW_CHOICES,
-    )
-    cards_per_row_research_by_asset_class = models.PositiveSmallIntegerField(
-        default=5, choices=CARDS_PER_ROW_CHOICES,
+    top_notes_annual_notes = models.PositiveSmallIntegerField(
+        default=TOP_NOTES_DEFAULT,
+        validators=[MinValueValidator(TOP_NOTES_MIN), MaxValueValidator(TOP_NOTES_MAX)],
     )
 
     updated_at = models.DateTimeField(auto_now=True)
@@ -120,8 +113,11 @@ class HomePageSettings(models.Model):
     def research_by_asset_class_heading(self):
         return self.heading_for_toggle('show_research_by_asset_class')
 
-    def cards_per_row_for(self, field):
-        return normalize_cards_per_row(getattr(self, field, CARDS_PER_ROW_DEFAULT))
+    def top_notes_for(self, field):
+        return normalize_top_notes(getattr(self, field, TOP_NOTES_DEFAULT))
 
-    def cards_per_row_for_toggle(self, toggle_field):
-        return self.cards_per_row_for(CARDS_PER_ROW_FIELD_BY_TOGGLE[toggle_field])
+    def top_notes_for_toggle(self, toggle_field):
+        field = TOP_NOTES_FIELD_BY_TOGGLE.get(toggle_field)
+        if not field:
+            return TOP_NOTES_DEFAULT
+        return self.top_notes_for(field)

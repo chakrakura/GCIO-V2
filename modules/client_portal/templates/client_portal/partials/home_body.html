@@ -15,7 +15,23 @@
   }
   @media (min-width: 1024px) {
     .home-cards-grid {
-      grid-template-columns: repeat(var(--home-cards-per-row, 2), minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .home-asset-class-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+  @media (min-width: 768px) {
+    .home-asset-class-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1024px) {
+    .home-asset-class-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
     }
   }
 </style>
@@ -162,8 +178,8 @@
     <a href="{% if is_home_preview %}{{ section.preview_list_url }}{% else %}{{ section.client_list_url }}{% endif %}" class="text-[13px] font-semibold text-blue-700 dark:text-blue-400 hover:underline">View more &rsaquo;</a>
   </div>
 
-  <div id="{{ section.container_id }}" data-home-notes data-section="{{ section.notes_section }}" style="--home-cards-per-row: {{ section.cards_per_row|default:2 }};">
-    {% include 'client_portal/partials/latest_research.html' with reports=section.reports asset_class_id=section.asset_class_id notes_section=section.notes_section notes_filter_param=section.notes_filter_param notes_all_url=section.notes_all_url notes_query_suffix=section.notes_query_suffix cards_per_row=section.cards_per_row is_home_preview=is_home_preview %}
+  <div id="{{ section.container_id }}" data-home-notes data-section="{{ section.notes_section }}">
+    {% include 'client_portal/partials/latest_research.html' with reports=section.reports asset_class_id=section.asset_class_id notes_section=section.notes_section notes_filter_param=section.notes_filter_param notes_all_url=section.notes_all_url notes_query_suffix=section.notes_query_suffix is_home_preview=is_home_preview %}
   </div>
   {% endfor %}
 
@@ -172,7 +188,7 @@
     <span class="w-1 h-5 bg-blue-700 rounded-full"></span>
     <h2 class="font-serif font-bold text-xl text-blue-900 dark:text-blue-300">{{ home_page_settings.research_by_asset_class_heading }}</h2>
   </div>
-  <div class="home-cards-grid" style="--home-cards-per-row: {{ home_page_settings.cards_per_row_research_by_asset_class|default:5 }};">
+  <div class="home-asset-class-grid">
     {% for ac in featured_asset_classes %}
     <a href="{% if is_home_preview %}{% url 'report_list' %}?asset_class={{ ac.id }}{% else %}{% url 'client_browse' %}?asset_class={{ ac.id }}{% endif %}" title="{{ ac.name }}" class="group flex items-center justify-between gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3.5 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50/60 dark:hover:bg-blue-900/20 transition-colors duration-150 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-900 dark:focus-visible:ring-blue-300">
       <span class="font-serif font-bold text-[14.5px] text-blue-900 dark:text-blue-300 truncate">{{ ac.name }}</span>

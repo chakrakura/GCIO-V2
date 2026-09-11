@@ -7,7 +7,7 @@
 </div>
 {% endif %}
 
-<div class="home-cards-grid" style="--home-cards-per-row: {{ cards_per_row|default:2 }};">
+<div class="home-cards-grid">
   {% for report in reports %}
   <a href="{% if is_home_preview %}{% url 'client_home_preview_report' report.id %}{% else %}{% url 'client_report_detail' report.id %}{% endif %}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
     <div class="flex items-center justify-between mb-2">

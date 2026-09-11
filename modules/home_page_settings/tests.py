@@ -34,13 +34,12 @@ class HomePageSettingsTests(TestCase):
         self.assertTrue(settings_obj.show_quarterly_notes)
         self.assertTrue(settings_obj.show_annual_notes)
         self.assertTrue(settings_obj.show_research_by_asset_class)
-        self.assertEqual(settings_obj.cards_per_row_featured_research, 2)
-        self.assertEqual(settings_obj.cards_per_row_latest_research, 2)
-        self.assertEqual(settings_obj.cards_per_row_weekly_notes, 2)
-        self.assertEqual(settings_obj.cards_per_row_monthly_notes, 2)
-        self.assertEqual(settings_obj.cards_per_row_quarterly_notes, 2)
-        self.assertEqual(settings_obj.cards_per_row_annual_notes, 2)
-        self.assertEqual(settings_obj.cards_per_row_research_by_asset_class, 5)
+        self.assertEqual(settings_obj.top_notes_latest_research, 6)
+        self.assertEqual(settings_obj.top_notes_weekly_notes, 6)
+        self.assertEqual(settings_obj.top_notes_monthly_notes, 6)
+        self.assertEqual(settings_obj.top_notes_quarterly_notes, 6)
+        self.assertEqual(settings_obj.top_notes_annual_notes, 6)
+        self.assertFalse(hasattr(settings_obj, 'cards_per_row_latest_research'))
 
     def test_super_admin_can_view_and_save(self):
         self.client.force_login(self.super_admin)
@@ -236,7 +235,7 @@ class HomePageSettingsTests(TestCase):
 
             expect(modal).to_be_visible()
             expect(page.locator('#section-edit-name')).to_have_value('Weekly Insight')
-            expect(page.locator('#section-edit-cards')).to_have_value('2')
+            expect(page.locator('#section-edit-top-notes')).to_have_value('6')
             expect(page.locator('#section-edit-enabled')).to_be_checked()
             expect(page.locator('#section-edit-save')).to_be_visible()
             expect(page.locator('#section-edit-cancel')).to_be_visible()
@@ -307,21 +306,29 @@ class HomePageSettingsTests(TestCase):
         settings_obj = HomePageSettings.load()
         self.assertEqual(settings_obj.title_weekly_notes, '')
 
-    def test_ajax_saves_cards_per_row_per_section(self):
+    def test_ajax_saves_top_notes_per_section(self):
         self.client.force_login(self.super_admin)
         url = reverse('home_page_settings')
         response = self.client.get(url)
-        self.assertContains(response, 'Cards per row')
-        self.assertContains(response, 'data-cards-field="cards_per_row_latest_research"')
-        self.assertContains(response, 'data-cards-field="cards_per_row_weekly_notes"')
-        self.assertContains(response, 'data-cards-field="cards_per_row_monthly_notes"')
-        self.assertContains(response, 'data-cards-field="cards_per_row_quarterly_notes"')
-        self.assertContains(response, 'data-cards-field="cards_per_row_annual_notes"')
-        self.assertContains(response, 'data-cards-field="cards_per_row_featured_research"')
-        self.assertContains(response, 'data-cards-field="cards_per_row_research_by_asset_class"')
-        self.assertContains(response, 'id="section-edit-cards"')
-        self.assertContains(response, '<option value="1">')
-        self.assertContains(response, '<option value="10">')
+        self.assertContains(response, 'Cards')
+        self.assertContains(response, '6 cards')
+        self.assertContains(response, 'data-top-notes-field="top_notes_latest_research"')
+        self.assertContains(response, 'data-top-notes-field="top_notes_weekly_notes"')
+        self.assertContains(response, 'data-top-notes-field="top_notes_monthly_notes"')
+        self.assertContains(response, 'data-top-notes-field="top_notes_quarterly_notes"')
+        self.assertContains(response, 'data-top-notes-field="top_notes_annual_notes"')
+        self.assertNotContains(response, 'Cards per row')
+        self.assertNotContains(response, 'data-cards-field')
+        self.assertNotContains(response, 'cards_per_row')
+        self.assertNotContains(response, 'Top notes')
+        self.assertNotContains(response, '>Top 6<')
+        self.assertContains(response, 'id="section-edit-top-notes"')
+        self.assertContains(response, 'type="number"')
+        self.assertNotContains(response, '<option value="6">')
+        html = response.content.decode()
+        self.assertRegex(html, r'data-field="show_featured_research"[\s\S]{0,400}?data-uses-top-notes="0"')
+        self.assertRegex(html, r'data-field="show_research_by_asset_class"[\s\S]{0,400}?data-uses-top-notes="0"')
+        self.assertRegex(html, r'data-field="show_latest_research"[\s\S]{0,400}?data-uses-top-notes="1"')
 
         response = self.client.post(
             url,
@@ -329,7 +336,7 @@ class HomePageSettingsTests(TestCase):
                 'action': 'save_section',
                 'field': 'show_weekly_notes',
                 'title': 'Weekly Insight',
-                'cards_per_row': '3',
+                'top_notes': '8',
                 'enabled': 'on',
             },
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
@@ -338,35 +345,33 @@ class HomePageSettingsTests(TestCase):
         self.assertEqual(response.json(), {
             'ok': True,
             'label': 'Weekly Insight',
-            'cards_per_row': 3,
+            'top_notes': 8,
             'on': True,
         })
         settings_obj = HomePageSettings.load()
-        self.assertEqual(settings_obj.cards_per_row_weekly_notes, 3)
-        self.assertEqual(settings_obj.cards_per_row_latest_research, 2)
-        self.assertEqual(settings_obj.cards_per_row_monthly_notes, 2)
-        self.assertEqual(settings_obj.cards_per_row_quarterly_notes, 2)
-        self.assertEqual(settings_obj.cards_per_row_annual_notes, 2)
-        self.assertEqual(settings_obj.cards_per_row_featured_research, 2)
-        self.assertEqual(settings_obj.cards_per_row_research_by_asset_class, 5)
+        self.assertEqual(settings_obj.top_notes_weekly_notes, 8)
+        self.assertEqual(settings_obj.top_notes_latest_research, 6)
+        self.assertEqual(settings_obj.top_notes_monthly_notes, 6)
+        self.assertEqual(settings_obj.top_notes_quarterly_notes, 6)
+        self.assertEqual(settings_obj.top_notes_annual_notes, 6)
         self.assertTrue(settings_obj.show_weekly_notes)
 
         response = self.client.post(
             url,
-            {'field': 'cards_per_row_monthly_notes', 'value': '4'},
+            {'field': 'top_notes_monthly_notes', 'value': '11'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
-        self.assertEqual(response.json(), {'ok': True, 'cards_per_row': 4})
+        self.assertEqual(response.json(), {'ok': True, 'top_notes': 11})
         settings_obj.refresh_from_db()
-        self.assertEqual(settings_obj.cards_per_row_weekly_notes, 3)
-        self.assertEqual(settings_obj.cards_per_row_monthly_notes, 4)
+        self.assertEqual(settings_obj.top_notes_weekly_notes, 8)
+        self.assertEqual(settings_obj.top_notes_monthly_notes, 11)
 
         html = self.client.get(url).content.decode()
-        self.assertIn('data-cards-field="cards_per_row_weekly_notes"', html)
-        self.assertRegex(html, r'data-cards-field="cards_per_row_weekly_notes"[\s\S]{0,200}?data-cards-per-row="3"')
-        self.assertRegex(html, r'data-cards-field="cards_per_row_monthly_notes"[\s\S]{0,200}?data-cards-per-row="4"')
+        self.assertIn('data-top-notes-field="top_notes_weekly_notes"', html)
+        self.assertRegex(html, r'data-top-notes-field="top_notes_weekly_notes"[\s\S]{0,250}?data-top-notes="8"')
+        self.assertRegex(html, r'data-top-notes-field="top_notes_monthly_notes"[\s\S]{0,250}?data-top-notes="11"')
 
-    def test_ajax_saves_section_name_cards_and_status(self):
+    def test_ajax_saves_section_name_top_notes_and_status(self):
         self.client.force_login(self.super_admin)
         response = self.client.post(
             reverse('home_page_settings'),
@@ -374,7 +379,7 @@ class HomePageSettingsTests(TestCase):
                 'action': 'save_section',
                 'field': 'show_monthly_notes',
                 'title': 'Month Ahead',
-                'cards_per_row': '4',
+                'top_notes': '10',
                 'enabled': 'off',
             },
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
@@ -382,91 +387,100 @@ class HomePageSettingsTests(TestCase):
         self.assertEqual(response.json(), {
             'ok': True,
             'label': 'Month Ahead',
-            'cards_per_row': 4,
+            'top_notes': 10,
             'on': False,
         })
         settings_obj = HomePageSettings.load()
         self.assertEqual(settings_obj.title_monthly_notes, 'Month Ahead')
-        self.assertEqual(settings_obj.cards_per_row_monthly_notes, 4)
+        self.assertEqual(settings_obj.top_notes_monthly_notes, 10)
         self.assertFalse(settings_obj.show_monthly_notes)
         self.assertTrue(settings_obj.show_weekly_notes)
-        self.assertEqual(settings_obj.cards_per_row_weekly_notes, 2)
+        self.assertEqual(settings_obj.top_notes_weekly_notes, 6)
         self.assertEqual(settings_obj.title_weekly_notes, '')
 
-    def test_invalid_cards_per_row_falls_back_to_two(self):
+    def test_invalid_top_notes_falls_back_to_six(self):
         settings_obj = HomePageSettings.load()
-        settings_obj.cards_per_row_weekly_notes = 4
+        settings_obj.top_notes_weekly_notes = 10
         settings_obj.save()
 
         self.client.force_login(self.super_admin)
         response = self.client.post(
             reverse('home_page_settings'),
-            {'field': 'cards_per_row_weekly_notes', 'value': '11'},
+            {'field': 'top_notes_weekly_notes', 'value': '0'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
-        self.assertEqual(response.json(), {'ok': True, 'cards_per_row': 2})
+        self.assertEqual(response.json(), {'ok': True, 'top_notes': 6})
         settings_obj.refresh_from_db()
-        self.assertEqual(settings_obj.cards_per_row_weekly_notes, 2)
-        self.assertEqual(settings_obj.cards_per_row_latest_research, 2)
+        self.assertEqual(settings_obj.top_notes_weekly_notes, 6)
+        self.assertEqual(settings_obj.top_notes_latest_research, 6)
 
-    def test_client_home_and_preview_use_section_cards_per_row(self):
-        from modules.taxonomy.models import AssetClass
+    def test_client_home_and_preview_use_section_top_notes(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+        from modules.taxonomy.models import AssetClass, PublicationType
+
         AssetClass.objects.create(name='Equities', show_on_home=True)
+        weekly_type, _ = PublicationType.objects.get_or_create(
+            slug='weekly-insight',
+            defaults={'name': 'Weekly Insight'},
+        )
+        now = timezone.now()
+        for i in range(12):
+            self._published_daily_note(
+                title=f'Daily note {i:02d}',
+                published_at=now - timedelta(hours=12 - i),
+            )
+        for i in range(8):
+            self._published_daily_note(
+                title=f'Weekly note {i:02d}',
+                published_at=now - timedelta(hours=8 - i),
+                publication_type=weekly_type,
+            )
 
         settings_obj = HomePageSettings.load()
-        settings_obj.cards_per_row_latest_research = 2
-        settings_obj.cards_per_row_weekly_notes = 3
-        settings_obj.cards_per_row_monthly_notes = 4
-        settings_obj.cards_per_row_quarterly_notes = 2
-        settings_obj.cards_per_row_annual_notes = 3
-        settings_obj.cards_per_row_research_by_asset_class = 5
+        settings_obj.top_notes_latest_research = 10
+        settings_obj.top_notes_weekly_notes = 6
         settings_obj.save()
 
         self.client.force_login(self.client_user)
         response = self.client.get(reverse('client_home'))
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
-        self.assertIn(
-            'id="daily-note-container" data-home-notes data-section="daily" style="--home-cards-per-row: 2;"',
-            html,
-        )
-        self.assertIn(
-            'id="weekly-notes-container" data-home-notes data-section="weekly" style="--home-cards-per-row: 3;"',
-            html,
-        )
-        self.assertIn(
-            'id="monthly-digest-container" data-home-notes data-section="monthly" style="--home-cards-per-row: 4;"',
-            html,
-        )
-        self.assertIn('style="--home-cards-per-row: 5;"', html)
-        self.assertIn('class="home-cards-grid" style="--home-cards-per-row: 3;"', html)
-        self.assertIn('class="home-cards-grid" style="--home-cards-per-row: 4;"', html)
+        self.assertIn('id="daily-note-container"', html)
+        self.assertIn('id="weekly-notes-container"', html)
+        self.assertNotIn('--home-cards-per-row', html)
         self.assertIn('home-cards-grid', html)
+        self.assertIn('home-asset-class-grid', html)
+        self.assertIn('Daily note 11', html)
+        self.assertIn('Daily note 02', html)
+        self.assertNotIn('Daily note 01', html)
+        self.assertNotIn('Daily note 00', html)
+        self.assertIn('Weekly note 07', html)
+        self.assertIn('Weekly note 02', html)
+        self.assertNotIn('Weekly note 01', html)
+        self.assertNotIn('Weekly note 00', html)
 
         self.client.force_login(self.super_admin)
         response = self.client.get(reverse('client_home_preview'))
         self.assertEqual(response.status_code, 200)
         preview = response.content.decode()
-        self.assertIn(
-            'id="weekly-notes-container" data-home-notes data-section="weekly" style="--home-cards-per-row: 3;"',
-            preview,
-        )
-        self.assertIn(
-            'id="monthly-digest-container" data-home-notes data-section="monthly" style="--home-cards-per-row: 4;"',
-            preview,
-        )
-        self.assertIn('style="--home-cards-per-row: 5;"', preview)
+        self.assertIn('Daily note 11', preview)
+        self.assertNotIn('Daily note 01', preview)
+        self.assertIn('Weekly note 07', preview)
+        self.assertNotIn('Weekly note 01', preview)
+        self.assertNotIn('--home-cards-per-row', preview)
 
-    def test_client_cannot_change_cards_per_row(self):
+    def test_client_cannot_change_top_notes(self):
         self.client.force_login(self.client_user)
         response = self.client.post(
             reverse('home_page_settings'),
-            {'field': 'cards_per_row_weekly_notes', 'value': '5'},
+            {'field': 'top_notes_weekly_notes', 'value': '10'},
             HTTP_X_REQUESTED_WITH='XMLHttpRequest',
         )
         self.assertEqual(response.status_code, 302)
         settings_obj = HomePageSettings.load()
-        self.assertEqual(settings_obj.cards_per_row_weekly_notes, 2)
+        self.assertEqual(settings_obj.top_notes_weekly_notes, 6)
 
     def _published_daily_note(self, **kwargs):
         from django.utils import timezone

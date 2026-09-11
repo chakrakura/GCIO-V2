@@ -83,7 +83,16 @@
   .section-dot.is-complete { border-color: transparent; background: #1e3a8a; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 12px 12px; }
   .checklist-dot.is-complete { border-color: transparent; background: #1e3a8a; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 10px 10px; }
   #checklist [data-check].is-complete { color: inherit; }
+  .canvas-title-input {
+    min-height: 2.5rem;
+    height: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    field-sizing: content;
+  }
 </style>
+{% include "client_portal/partials/pdf_attachment_chip_styles.html" %}
 {% endblock %}
 
 {% block content %}
@@ -234,17 +243,44 @@
 
             <div class="border-t border-gray-100 dark:border-gray-700/60 my-5"></div>
 
+            <div class="hidden">
+              {{ form.file_upload }}
+              {{ form.article_attachment }}
+            </div>
+
             <div id="article-body-section" class="{% if report.content_type and report.content_type != 'text' %}hidden{% endif %}">
               <div id="block-editor"></div>
               {{ form.body }}
+
+              <div id="article-attach-section" class="mt-5 pt-4 border-t border-gray-100 dark:border-gray-700/60">
+                <div id="article-attach-dropzone" class="flex items-center gap-2 min-h-[44px] px-1 -mx-1 rounded-lg border border-transparent cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/70 transition-colors duration-150 group">
+                  <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0 group-hover:text-blue-800 dark:group-hover:text-blue-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                  <span class="text-[13px] font-semibold text-blue-900 dark:text-blue-400">Attach File</span>
+                  <span class="text-[12px] text-gray-400 dark:text-gray-500">optional</span>
+                </div>
+
+                <div id="article-attach-card" class="hidden">
+                  <div class="text-[13px] font-semibold text-gray-800 dark:text-gray-200 mb-2.5">One attachment</div>
+                  <div class="flex items-end gap-3">
+                    <button type="button" id="article-attach-preview-btn" class="gcio-pdf-chip" title="Preview PDF">
+                      <span class="gcio-pdf-chip-preview"><span>PDF</span></span>
+                      <span class="gcio-pdf-chip-footer">
+                        <span class="gcio-pdf-chip-badge">PDF</span>
+                        <span id="article-attach-name" class="gcio-pdf-chip-name"></span>
+                      </span>
+                      <span class="gcio-pdf-chip-fold" aria-hidden="true"></span>
+                    </button>
+                    <span id="article-attach-size" class="hidden"></span>
+                    <button type="button" id="article-attach-change-btn" class="text-[12px] font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer px-2 py-1.5 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/70 shrink-0">
+                      Change
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div id="file-upload-section" class="{% if not report.content_type or report.content_type == 'text' %}hidden{% endif %}">
               <label class="block text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-1.5">FILE</label>
-
-            <div class="hidden">
-              {{ form.file_upload }}
-            </div>
 
             <!-- Custom Drag & Drop Dropzone -->
             <div id="file-dropzone" class="border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-blue-600 dark:hover:border-blue-400 rounded-xl p-6 text-center cursor-pointer transition-all duration-200 bg-gray-50/50 dark:bg-gray-900/30 group">
@@ -276,12 +312,14 @@
               </div>
             </div>
 
-            <!-- File type validation error message -->
+            </div>
+
             <div id="file-type-error" class="hidden text-xs text-red-600 dark:text-red-400 font-medium mt-2.5 flex items-center gap-1.5 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 p-2.5 rounded-lg">
               <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
               <span id="file-type-error-msg"></span>
             </div>
-          </div>
+            {% if form.file_upload.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-2">{{ form.file_upload.errors }}</div>{% endif %}
+            {% if form.article_attachment.errors %}<div class="text-red-700 dark:text-red-400 text-[12.5px] mt-2">{{ form.article_attachment.errors }}</div>{% endif %}
           </div>
         </div>
       </div>
@@ -548,7 +586,30 @@
   const form = document.getElementById('report-form');
   const statusInput = document.getElementById('{{ form.status.id_for_label }}');
   const titleInput = document.getElementById('{{ form.title.id_for_label }}');
+
+  function autoGrowTitle() {
+    if (!titleInput) return;
+    const caretStart = titleInput.selectionStart;
+    const caretEnd = titleInput.selectionEnd;
+    const flattened = titleInput.value.replace(/[\r\n]+/g, ' ');
+    if (flattened !== titleInput.value) {
+      titleInput.value = flattened;
+      try { titleInput.setSelectionRange(caretStart, caretEnd); } catch (e) {}
+    }
+    titleInput.style.height = 'auto';
+    titleInput.style.height = titleInput.scrollHeight + 'px';
+  }
+  if (titleInput) {
+    titleInput.addEventListener('input', autoGrowTitle);
+    titleInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') e.preventDefault();
+    });
+    window.addEventListener('resize', autoGrowTitle);
+    autoGrowTitle();
+  }
   const existingFileUrl = "{% if report and report.file_upload %}{{ report.file_upload.url }}{% endif %}" || null;
+  const existingArticleAttachmentUrl = "{% if report and report.article_attachment %}{{ report.article_attachment.url }}{% endif %}" || null;
+  const existingArticleAttachmentName = "{% if report and report.article_attachment %}{{ report.article_attachment.name|default:'' }}{% endif %}";
   const previewPdfUrl = "{{ preview_pdf_url|default:'' }}" || null;
 
   function validateForm() {
@@ -557,6 +618,18 @@
     const checkedRadio = document.querySelector('input[name="content_type"]:checked');
     const val = checkedRadio ? checkedRadio.value : 'text';
     let fileName = '';
+    if (val === 'text') {
+      if (articleAttachInput && articleAttachInput.files && articleAttachInput.files[0]) {
+        fileName = articleAttachInput.files[0].name;
+      } else if (existingArticleAttachmentUrl) {
+        fileName = existingArticleAttachmentName.split('/').pop().split('\\').pop();
+      }
+      if (fileName && !fileName.toLowerCase().endsWith('.pdf')) {
+        alert('Invalid file format. Text articles can only attach a .pdf file.');
+        return false;
+      }
+      return true;
+    }
     if (realFileInput && realFileInput.files && realFileInput.files[0]) {
       fileName = realFileInput.files[0].name;
     } else if (existingFileUrl) {
@@ -619,6 +692,13 @@
   const fileRestrictionHint = document.getElementById('file-restriction-hint');
   const fileTypeError = document.getElementById('file-type-error');
   const fileTypeErrorMsg = document.getElementById('file-type-error-msg');
+  const articleAttachDropzone = document.getElementById('article-attach-dropzone');
+  const articleAttachCard = document.getElementById('article-attach-card');
+  const articleAttachName = document.getElementById('article-attach-name');
+  const articleAttachSize = document.getElementById('article-attach-size');
+  const articleAttachChangeBtn = document.getElementById('article-attach-change-btn');
+  const articleAttachPreviewBtn = document.getElementById('article-attach-preview-btn');
+  const articleAttachInput = document.getElementById('{{ form.article_attachment.id_for_label }}');
 
   function syncFileUI() {
     const checkedRadio = document.querySelector('input[name="content_type"]:checked');
@@ -652,10 +732,10 @@
         isMismatch = true;
       } else if (val === 'presentation' && !(lower.endsWith('.pptx') || lower.endsWith('.ppt'))) {
         isMismatch = true;
-      } else {
+      } else if (val !== 'text') {
         hasFile = true;
       }
-    } else if (existingFileUrl) {
+    } else if (existingFileUrl && val !== 'text') {
       const rawName = "{{ report.file_upload.name|default:'' }}";
       fileName = rawName.split('/').pop().split('\\').pop();
       const lower = fileName.toLowerCase();
@@ -677,8 +757,8 @@
       }
       hasFile = false;
       if (fileTypeErrorMsg) {
-        fileTypeErrorMsg.textContent = val === 'pdf' 
-          ? 'Selected file is not a PDF. Please upload a .pdf file for PDF content.' 
+        fileTypeErrorMsg.textContent = val === 'pdf'
+          ? 'Selected file is not a PDF. Please upload a .pdf file for PDF content.'
           : 'Selected file is not a Presentation. Please upload a .pptx or .ppt file for Presentation content.';
       }
       if (fileTypeError) fileTypeError.classList.remove('hidden');
@@ -703,27 +783,78 @@
     }
   }
 
-  if (fileDropzone && realFileInput) {
-    fileDropzone.addEventListener('click', () => realFileInput.click());
-    fileDropzone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      fileDropzone.classList.add('border-blue-600', 'bg-blue-50/50');
-    });
-    fileDropzone.addEventListener('dragleave', () => {
-      fileDropzone.classList.remove('border-blue-600', 'bg-blue-50/50');
-    });
-    fileDropzone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      fileDropzone.classList.remove('border-blue-600', 'bg-blue-50/50');
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-        realFileInput.files = e.dataTransfer.files;
-        realFileInput.dispatchEvent(new Event('change', { bubbles: true }));
+  function syncArticleAttachUI() {
+    if (articleAttachInput) articleAttachInput.accept = '.pdf,application/pdf';
+    let hasFile = false;
+    let fileName = '';
+    let fileSizeStr = '';
+
+    if (articleAttachInput && articleAttachInput.files && articleAttachInput.files[0]) {
+      const f = articleAttachInput.files[0];
+      const lower = f.name.toLowerCase();
+      if (!lower.endsWith('.pdf')) {
+        articleAttachInput.value = '';
+        if (fileTypeErrorMsg) fileTypeErrorMsg.textContent = 'Selected file is not a PDF. Text articles can only attach a .pdf file.';
+        if (fileTypeError) fileTypeError.classList.remove('hidden');
+      } else {
+        hasFile = true;
+        fileName = f.name;
+        fileSizeStr = `${(f.size / (1024 * 1024)).toFixed(2)} MB`;
       }
-    });
+    } else if (existingArticleAttachmentUrl) {
+      hasFile = true;
+      fileName = existingArticleAttachmentName.split('/').pop().split('\\').pop();
+    }
+
+    if (hasFile) {
+      if (articleAttachDropzone) articleAttachDropzone.classList.add('hidden');
+      if (articleAttachCard) articleAttachCard.classList.remove('hidden');
+      if (articleAttachName) articleAttachName.textContent = fileName;
+      if (articleAttachSize) articleAttachSize.textContent = fileSizeStr || '';
+    } else {
+      if (articleAttachDropzone) articleAttachDropzone.classList.remove('hidden');
+      if (articleAttachCard) articleAttachCard.classList.add('hidden');
+    }
   }
 
   if (fileChangeBtn && realFileInput) {
     fileChangeBtn.addEventListener('click', () => realFileInput.click());
+  }
+
+  function bindDropzone(zone, input) {
+    if (!zone || !input) return;
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zone.classList.add('border-blue-600', 'bg-blue-50/50');
+    });
+    zone.addEventListener('dragleave', () => {
+      zone.classList.remove('border-blue-600', 'bg-blue-50/50');
+    });
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.classList.remove('border-blue-600', 'bg-blue-50/50');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+        input.files = e.dataTransfer.files;
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    });
+  }
+  bindDropzone(fileDropzone, realFileInput);
+  bindDropzone(articleAttachDropzone, articleAttachInput);
+
+  if (articleAttachChangeBtn && articleAttachInput) {
+    articleAttachChangeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      articleAttachInput.click();
+    });
+  }
+
+  if (articleAttachInput) {
+    articleAttachInput.addEventListener('change', () => {
+      if (fileTypeError) fileTypeError.classList.add('hidden');
+      syncArticleAttachUI();
+    });
   }
 
   if (realFileInput) {
@@ -752,7 +883,9 @@
           return;
         }
 
-        autoDetectFilePageCount(f);
+        if (val === 'pdf' || val === 'presentation') {
+          autoDetectFilePageCount(f);
+        }
       }
       syncFileUI();
     });
@@ -808,6 +941,7 @@
     }
 
     syncFileUI();
+    syncArticleAttachUI();
   }
 
   if (toggleAiBtn && aiCard) {
@@ -993,6 +1127,7 @@
         return;
       }
       titleInput.value = data.title;
+      autoGrowTitle();
       blocks = parseHtmlToBlocks(data.body_html);
       renderBlocks();
     } catch (err) {
@@ -1137,6 +1272,22 @@
     let isPptx = false;
     let pptxFileName = '';
 
+    if (contentType === 'text') {
+      if (articleAttachInput && articleAttachInput.files && articleAttachInput.files[0]) {
+        const file = articleAttachInput.files[0];
+        originalFileUrl = URL.createObjectURL(file);
+        originalFileName = file.name;
+        if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+          targetUrl = originalFileUrl;
+        }
+      } else if (existingArticleAttachmentUrl) {
+        originalFileUrl = existingArticleAttachmentUrl;
+        originalFileName = existingArticleAttachmentName.split('/').pop().split('\\').pop();
+        targetUrl = existingArticleAttachmentUrl;
+      }
+      return { contentType, targetUrl, originalFileUrl, originalFileName, isPptx: false, pptxFileName: '' };
+    }
+
     if (fileInput && fileInput.files && fileInput.files[0]) {
       const file = fileInput.files[0];
       originalFileUrl = URL.createObjectURL(file);
@@ -1170,7 +1321,8 @@
     return { contentType, targetUrl, originalFileUrl, originalFileName, isPptx, pptxFileName };
   }
 
-  function openPreviewModal(playMode) {
+  function openPreviewModal(playMode, options) {
+    const forcePdf = !!(options && options.forcePdf);
     const { contentType, targetUrl, originalFileUrl, originalFileName, isPptx, pptxFileName } = resolvePreviewTarget();
     const titleVal = titleInput.value.trim() || 'Untitled content';
     const descInput = document.getElementById('{{ form.description.id_for_label }}');
@@ -1183,11 +1335,11 @@
     const previewDownloadLabel = document.getElementById('preview-download-label');
 
     if (previewDownloadBtn) {
-      if (originalFileUrl && (contentType === 'presentation' || contentType === 'pdf')) {
+      if (originalFileUrl && (contentType === 'presentation' || contentType === 'pdf' || forcePdf)) {
         previewDownloadBtn.href = originalFileUrl;
         previewDownloadBtn.download = originalFileName || (contentType === 'presentation' ? 'presentation.pptx' : 'document.pdf');
         if (previewDownloadLabel) {
-          previewDownloadLabel.textContent = contentType === 'presentation' ? 'Download PPTX' : 'Download PDF';
+          previewDownloadLabel.textContent = contentType === 'presentation' && !forcePdf ? 'Download PPTX' : 'Download PDF';
         }
         previewDownloadBtn.classList.remove('hidden');
       } else {
@@ -1196,10 +1348,11 @@
     }
 
     if (previewPlayBtn) {
-      previewPlayBtn.classList.toggle('hidden', contentType !== 'presentation');
+      previewPlayBtn.classList.toggle('hidden', contentType !== 'presentation' || forcePdf);
     }
 
-    if (contentType === 'text') {
+    if (contentType === 'text' && !forcePdf) {
+      const hasPdf = !!(targetUrl || (originalFileName && originalFileName.toLowerCase().endsWith('.pdf')));
       previewBody.className = "flex-1 w-full overflow-y-auto bg-white dark:bg-gray-800 p-8";
       previewBody.innerHTML = `
         <div class="max-w-3xl mx-auto">
@@ -1207,15 +1360,23 @@
           <div class="report-body prose dark:prose-invert max-w-none text-[15px] leading-relaxed text-gray-800 dark:text-gray-200">
             ${serializeBlocks() || '<p class="text-gray-400">No article content written yet.</p>'}
           </div>
+          ${hasPdf ? `
+          <div class="mt-10 pt-7 border-t border-gray-200 dark:border-gray-700">
+            <button type="button" id="preview-view-attached-pdf" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+              View PDF
+            </button>
+          </div>` : ''}
         </div>
       `;
+      document.getElementById('preview-view-attached-pdf')?.addEventListener('click', () => openPreviewModal(false, { forcePdf: true }));
     } else {
       previewBody.className = "flex-1 w-full overflow-hidden bg-gray-900";
 
       if (targetUrl) {
         const viewerUrl = targetUrl.includes('#') ? targetUrl : (targetUrl + '#toolbar=1&navpanes=1');
         previewBody.innerHTML = `<iframe src="${viewerUrl}" class="w-full h-full border-0 bg-gray-900" title="Content preview"></iframe>`;
-      } else if (isPptx) {
+      } else if (isPptx && !forcePdf) {
         previewBody.innerHTML = `
           <div class="flex flex-col items-center justify-center h-full p-8 text-center bg-gray-900">
             <div class="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4 border border-amber-500/20">
@@ -1230,7 +1391,7 @@
           <div class="flex flex-col items-center justify-center h-full p-8 text-center text-gray-400 bg-gray-900">
             <svg class="w-12 h-12 text-gray-600 mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
             <div class="font-semibold text-base text-gray-200 mb-1">No file uploaded</div>
-            <div class="text-xs text-gray-400">Upload a ${contentType === 'pdf' ? 'PDF' : 'presentation'} file in the form above to preview it.</div>
+            <div class="text-xs text-gray-400">Upload a ${forcePdf || contentType === 'pdf' ? 'PDF' : 'presentation'} file in the form above to preview it.</div>
           </div>
         `;
       }
@@ -1238,7 +1399,7 @@
 
     previewModal.classList.remove('hidden');
 
-    if (playMode && contentType === 'presentation') {
+    if (playMode && contentType === 'presentation' && !forcePdf) {
       enterPlayMode(targetUrl);
     } else {
       exitPlayMode();
@@ -1246,6 +1407,9 @@
   }
 
   document.getElementById('preview-btn').addEventListener('click', () => openPreviewModal(false));
+  if (articleAttachPreviewBtn) {
+    articleAttachPreviewBtn.addEventListener('click', () => openPreviewModal(false, { forcePdf: true }));
+  }
   if (previewPlayBtn) previewPlayBtn.addEventListener('click', () => {
     const { targetUrl } = resolvePreviewTarget();
     if (inPlayMode) exitPlayMode(); else enterPlayMode(targetUrl);

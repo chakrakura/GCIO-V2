@@ -148,3 +148,111 @@ class ReportFormEditorTests(TestCase):
             self.assertIn('bravo', text)
 
             browser.close()
+
+    def test_create_content_page_has_article_pdf_attach(self):
+        self.client.force_login(self.user)
+        response = self.client.get(reverse('report_add'))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn('id="article-attach-section"', content)
+        self.assertIn('id="article-attach-preview-btn"', content)
+        self.assertIn('Attach File', content)
+        self.assertIn('gcio-pdf-chip', content)
+        self.assertIn('canvas-title-input', content)
+        self.assertIn('id="id_title"', content)
+        self.assertRegex(content, r'<textarea[^>]*id="id_title"')
+
+    def test_text_article_can_attach_pdf_without_changing_type(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.utils import timezone
+        from modules.reports.models import Report
+
+        pdf = SimpleUploadedFile(
+            'briefing.pdf',
+            b'%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<>\n%%EOF\n',
+            content_type='application/pdf',
+        )
+        self.client.force_login(self.user)
+        response = self.client.post(reverse('report_add'), {
+            'content_type': Report.CONTENT_TEXT,
+            'title': 'Rates note with PDF',
+            'description': 'Summary',
+            'body': '<p>Overnight moves.</p>',
+            'status': Report.STATUS_PUBLISHED,
+            'access_level': Report.ACCESS_ALL,
+            'page_count': 5,
+            'published_at': timezone.now().date().isoformat(),
+            'article_attachment': pdf,
+        })
+        self.assertEqual(response.status_code, 302)
+        report = Report.objects.get(title='Rates note with PDF')
+        self.assertEqual(report.content_type, Report.CONTENT_TEXT)
+        self.assertTrue(report.article_attachment.name.lower().endswith('.pdf'))
+        self.assertFalse(bool(report.file_upload))
+        self.assertEqual(report.page_count, 5)
+
+        edit = self.client.get(reverse('report_edit', args=[report.id]))
+        self.assertEqual(edit.status_code, 200)
+        html = edit.content.decode()
+        self.assertIn(report.article_attachment.url, html)
+        self.assertIn('const existingFileUrl = "" || null;', html)
+
+    def test_text_article_rejects_non_pdf_attachment(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from modules.reports.models import Report
+
+        pptx = SimpleUploadedFile(
+            'deck.pptx',
+            b'not-a-pdf',
+            content_type='application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        )
+        self.client.force_login(self.user)
+        response = self.client.post(reverse('report_add'), {
+            'content_type': Report.CONTENT_TEXT,
+            'title': 'Should not save',
+            'body': '<p>Body</p>',
+            'status': Report.STATUS_DRAFT,
+            'access_level': Report.ACCESS_ALL,
+            'page_count': 1,
+            'article_attachment': pptx,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'must be a PDF')
+        self.assertFalse(Report.objects.filter(title='Should not save').exists())
+
+    def test_client_article_shows_attached_pdf_preview(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from django.utils import timezone
+        from modules.reports.models import Report
+        from modules.roles.models import Role
+
+        User = get_user_model()
+        client_role = Role.objects.get(slug='client-user')
+        client_user = User.objects.create_user('reader', 'reader@example.com', 'pass')
+        client_user.profile.role = client_role
+        client_user.profile.save()
+
+        pdf = SimpleUploadedFile(
+            'briefing.pdf',
+            b'%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<>\n%%EOF\n',
+            content_type='application/pdf',
+        )
+        report = Report.objects.create(
+            title='Client article with PDF',
+            body='<p>Overnight moves in rates.</p>',
+            content_type=Report.CONTENT_TEXT,
+            status=Report.STATUS_PUBLISHED,
+            published_at=timezone.now(),
+            access_level=Report.ACCESS_ALL,
+            article_attachment=pdf,
+        )
+
+        self.client.force_login(client_user)
+        response = self.client.get(reverse('client_report_detail', args=[report.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Overnight moves in rates.')
+        self.assertContains(response, 'id="view-pdf-btn"')
+        self.assertContains(response, 'id="attached-pdf-card"')
+        self.assertContains(response, 'gcio-pdf-chip')
+        self.assertContains(response, 'One attachment')
+        self.assertContains(response, 'id="pdf-viewer-modal"')

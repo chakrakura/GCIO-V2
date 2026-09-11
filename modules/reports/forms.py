@@ -28,15 +28,19 @@ class ReportForm(forms.ModelForm):
     class Meta:
         model = Report
         fields = [
-            'content_type', 'title', 'description', 'body', 'file_upload',
+            'content_type', 'title', 'description', 'body', 'file_upload', 'article_attachment',
             'status', 'access_level', 'published_at', 'visible_organizations', 'publication_type', 'page_count', 'is_featured',
             'author', 'asset_classes', 'countries_regions', 'tags',
         ]
         widgets = {
             'content_type': forms.RadioSelect,
-            'title': forms.TextInput(attrs={
-                'class': 'canvas-title-input w-full font-serif font-bold text-3xl sm:text-4xl text-gray-900 dark:text-gray-100 bg-transparent border-none focus:outline-none focus:ring-0 p-0 placeholder-gray-300 dark:placeholder-gray-600',
+            'title': forms.Textarea(attrs={
+                'class': 'canvas-title-input w-full font-serif font-bold text-3xl sm:text-4xl text-gray-900 dark:text-gray-100 bg-transparent border-none focus:outline-none focus:ring-0 p-0 placeholder-gray-300 dark:placeholder-gray-600 resize-none overflow-hidden leading-tight',
                 'placeholder': 'Editorial title',
+                'rows': 1,
+                'cols': 40,
+                'wrap': 'soft',
+                'maxlength': 255,
             }),
             'description': forms.Textarea(attrs={
                 'class': 'canvas-dek-input w-full italic text-lg text-gray-500 dark:text-gray-400 bg-transparent border-none focus:outline-none focus:ring-0 p-0 resize-none placeholder-gray-300 dark:placeholder-gray-600',
@@ -65,6 +69,7 @@ class ReportForm(forms.ModelForm):
         self.fields['countries_regions'].queryset = CountryRegion.objects.filter(is_active=True)
         self.fields['tags'].queryset = ReportTag.objects.filter(is_active=True)
         self.fields['file_upload'].required = False
+        self.fields['article_attachment'].required = False
         self.fields['page_count'].required = False
 
         if self.instance and self.instance.pk and self.instance.published_at:
@@ -82,6 +87,10 @@ class ReportForm(forms.ModelForm):
             org_options = org_options.filter(pk__in=allowed_ids)
         self.fields['visible_organizations'].queryset = org_options
 
+    def clean_title(self):
+        title = self.cleaned_data.get('title') or ''
+        return ' '.join(title.split())
+
     def clean_page_count(self):
         # page_count is a non-nullable column — fall back to 1 rather than erroring
         # when the field is left blank (it's no longer a required field).
@@ -91,9 +100,12 @@ class ReportForm(forms.ModelForm):
         cleaned_data = super().clean()
         content_type = cleaned_data.get('content_type')
         file_upload = cleaned_data.get('file_upload')
+        article_attachment = cleaned_data.get('article_attachment')
 
         if not file_upload and self.instance and self.instance.pk and self.instance.file_upload:
             file_upload = self.instance.file_upload
+        if not article_attachment and self.instance and self.instance.pk and self.instance.article_attachment:
+            article_attachment = self.instance.article_attachment
 
         if content_type == Report.CONTENT_PDF:
             if not file_upload:
@@ -102,6 +114,12 @@ class ReportForm(forms.ModelForm):
                 name = file_upload.name.lower()
                 if not name.endswith('.pdf'):
                     self.add_error('file_upload', 'Selected file format is invalid. PDF content requires a .pdf file.')
+        elif content_type == Report.CONTENT_TEXT:
+            cleaned_data['file_upload'] = False
+            if article_attachment:
+                name = article_attachment.name.lower()
+                if not name.endswith('.pdf'):
+                    self.add_error('article_attachment', 'Attached files on a text article must be a PDF.')
         elif content_type == Report.CONTENT_PRESENTATION:
             if not file_upload:
                 self.add_error('file_upload', 'A presentation file (.pptx or .ppt) is required for Presentation content.')

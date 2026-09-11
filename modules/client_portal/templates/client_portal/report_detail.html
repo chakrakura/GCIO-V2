@@ -1,4 +1,4 @@
-{% extends "client_portal/base_client.html" %}
+{% extends base_template %}
 {% load static %}
 
 {% block title %}{{ report.title }}{% endblock %}
@@ -29,14 +29,15 @@
   .dark .stat-block-value { color: #93c5fd; }
   .stat-block-label { font-size: 12px; color: #6b7280; }
 </style>
+{% include "client_portal/partials/pdf_attachment_chip_styles.html" %}
 {% endblock %}
 
 {% block breadcrumb %}{{ report.publication_type.name|default:"Report" }}{% endblock %}
 
 {% block content %}
-  <a href="{% url 'client_home' %}" class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-6">
+  <a href="{% if is_home_preview %}{% url 'client_home_preview' %}{% else %}{% url 'client_home' %}{% endif %}" class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-6">
     <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
-    Back to portal
+    {% if is_home_preview %}Back to preview{% else %}Back to portal{% endif %}
   </a>
 
   <div class="max-w-3xl">
@@ -59,14 +60,28 @@
 
     {% if report.content_type == 'text' %}
       <div class="report-body prose dark:prose-invert max-w-none text-[15px] leading-relaxed text-gray-800 dark:text-gray-200">{{ report.body|safe }}</div>
-    {% elif preview_pdf_url %}
-      <div class="flex items-center gap-2">
+    {% endif %}
+
+    {% if preview_pdf_url %}
+      <div class="{% if report.content_type == 'text' %}mt-10 pt-8 border-t border-gray-200 dark:border-gray-700{% endif %}">
+        {% if report.content_type == 'text' %}
+        <div class="text-[13px] font-semibold text-gray-800 dark:text-gray-200 mb-2.5">One attachment</div>
+        <button type="button" id="attached-pdf-card" class="gcio-pdf-chip mb-1" title="Preview PDF">
+          <span class="gcio-pdf-chip-preview"><span>PDF</span></span>
+          <span class="gcio-pdf-chip-footer">
+            <span class="gcio-pdf-chip-badge">PDF</span>
+            <span class="gcio-pdf-chip-name">{{ attached_file_name|default:"Attached PDF" }}</span>
+          </span>
+          <span class="gcio-pdf-chip-fold" aria-hidden="true"></span>
+        </button>
+        {% endif %}
+      <div class="flex items-center gap-2 {% if report.content_type == 'text' %}hidden{% endif %}">
         <button type="button" id="view-pdf-btn" data-pdf-url="{{ preview_pdf_url }}" data-pdf-title="{{ report.title }}" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
           View {{ preview_label }}
         </button>
-        {% if report.file_upload %}
-        <a href="{{ report.file_upload.url }}" download class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
+        {% if reader_file %}
+        <a href="{{ reader_file.url }}" download class="inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-[18px] py-2.5 text-sm font-semibold cursor-pointer">
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Download {% if preview_label == 'Presentation' %}PPTX{% else %}PDF{% endif %}
         </a>
@@ -78,8 +93,8 @@
           <div class="flex items-center justify-between px-5 py-3.5 border-b border-gray-200 dark:border-gray-700 shrink-0">
             <div id="pdf-viewer-title" class="text-[14px] font-semibold text-gray-900 dark:text-gray-100 truncate"></div>
             <div class="flex items-center gap-1.5">
-              {% if report.file_upload %}
-              <a href="{{ report.file_upload.url }}" download class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white transition-colors cursor-pointer shadow-2xs mr-1" title="Download original file">
+              {% if reader_file %}
+              <a href="{{ reader_file.url }}" download class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white transition-colors cursor-pointer shadow-2xs mr-1" title="Download original file">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 <span>Download {% if preview_label == 'Presentation' %}PPTX{% else %}PDF{% endif %}</span>
               </a>
@@ -110,6 +125,7 @@
             </button>
           </div>
         </div>
+      </div>
       </div>
     {% elif is_pptx_file %}
       <div class="flex flex-wrap items-center gap-3">
@@ -261,6 +277,8 @@
     }
 
     btn.addEventListener('click', () => openViewer(false));
+    const attachedCard = document.getElementById('attached-pdf-card');
+    if (attachedCard) attachedCard.addEventListener('click', () => openViewer(false));
     if (playBtn) playBtn.addEventListener('click', () => openViewer(true));
     if (headerPlayBtn) headerPlayBtn.addEventListener('click', enterPlayMode);
     closeBtn.addEventListener('click', closeViewer);

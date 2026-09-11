@@ -6,6 +6,7 @@
 
 {% block extra_style %}
 <style>
+  #section-edit-modal.hidden { display: none; }
   .home-toggle {
     position: relative;
     display: inline-flex;
@@ -75,7 +76,7 @@
       <div>
         <div class="text-[11px] tracking-wider font-bold text-gray-500 dark:text-gray-400 mb-2">SETTINGS</div>
         <h1 class="font-serif font-bold text-3xl text-blue-900 dark:text-blue-300 mb-2">Home Page Settings</h1>
-        <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Choose which sections appear on the client research portal Home page. These settings apply to every client user and save as soon as you toggle a section.</p>
+        <p class="text-gray-500 dark:text-gray-400 text-[14.5px] max-w-xl">Choose which sections appear on the client research portal Home page. Click Edit to change a section’s name, cards per row, and whether it is shown on /portal.</p>
       </div>
       <div id="settings-save-status" class="text-[13px] font-semibold text-gray-400 dark:text-gray-500 whitespace-nowrap pt-8" aria-live="polite"></div>
     </div>
@@ -87,25 +88,86 @@
       Turning a section off hides it immediately on <span class="font-semibold text-gray-700 dark:text-gray-300">/portal</span>. Content elsewhere on the portal is unchanged.
     </div>
 
-    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden shadow-xs">
       {% for toggle in section_toggles %}
-      <div class="flex items-start justify-between gap-6 px-6 py-5 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-700{% endif %}">
+      <div class="flex items-center justify-between gap-6 px-5 py-3.5 {% if not forloop.last %}border-b border-gray-100 dark:border-gray-700{% endif %}"
+           data-section-row
+           data-field="{{ toggle.field }}"
+           data-title-field="{{ toggle.title_field }}"
+           data-cards-field="{{ toggle.cards_field }}"
+           data-default-label="{{ toggle.default_label }}"
+           data-cards-per-row="{{ toggle.cards_per_row }}"
+           data-on="{% if toggle.on %}1{% else %}0{% endif %}"
+           data-uses-card-grid="{% if toggle.uses_card_grid %}1{% else %}0{% endif %}">
         <div class="min-w-0">
-          <label class="block font-semibold text-[14.5px] text-blue-900 dark:text-blue-300 cursor-pointer" for="{{ toggle.field }}">{{ toggle.label }}</label>
-          <p class="text-[13px] text-gray-500 dark:text-gray-400 mt-1">{{ toggle.help }}</p>
+          <span class="block font-semibold text-[13.5px] text-gray-900 dark:text-gray-100 truncate" data-title-display>{{ toggle.label }}</span>
+          <p class="text-[12.5px] text-gray-500 dark:text-gray-400 mt-0.5" data-section-help>{{ toggle.help }}</p>
         </div>
-        <div class="flex items-center gap-3 shrink-0">
-          <span class="text-[11px] font-bold tracking-wider {% if toggle.on %}text-green-700 dark:text-green-400{% else %}text-gray-400 dark:text-gray-500{% endif %}" data-toggle-label>{% if toggle.on %}ON{% else %}OFF{% endif %}</span>
-          <span class="home-toggle">
-            <input type="checkbox" name="{{ toggle.field }}" id="{{ toggle.field }}" {% if toggle.on %}checked{% endif %} aria-label="{{ toggle.label }}">
-            <span class="home-toggle-track" aria-hidden="true"></span>
-            <span class="home-toggle-thumb" aria-hidden="true"></span>
-          </span>
+        <div class="flex items-center gap-5 shrink-0">
+          <span class="text-[12.5px] font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap" data-cards-display>{{ toggle.cards_per_row }} per row</span>
+          {% if toggle.on %}
+          <span class="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-green-700 dark:text-green-400" data-toggle-label><span class="w-1.5 h-1.5 rounded-full bg-current"></span>Active</span>
+          {% else %}
+          <span class="inline-flex items-center gap-1.5 text-[11.5px] font-bold text-gray-400 dark:text-gray-500" data-toggle-label><span class="w-1.5 h-1.5 rounded-full bg-current"></span>Inactive</span>
+          {% endif %}
+          <button type="button"
+                  class="w-[30px] h-[30px] rounded-md bg-transparent text-gray-400 dark:text-gray-500 flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200 cursor-pointer"
+                  data-edit-section
+                  title="Edit"
+                  aria-label="Edit {{ toggle.default_label }}">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+          </button>
         </div>
       </div>
       {% endfor %}
     </div>
   </form>
+
+  <div id="section-edit-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900/60 backdrop-blur-xs flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="section-edit-title">
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in duration-200">
+      <div class="p-6 border-b border-gray-100 dark:border-gray-700/60 flex items-center justify-between">
+        <h3 id="section-edit-title" class="text-lg font-bold text-gray-900 dark:text-gray-100">Edit section</h3>
+        <button type="button" id="section-edit-close" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl font-bold p-1 cursor-pointer" aria-label="Close">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label for="section-edit-name" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Name *</label>
+          <input type="text" id="section-edit-name" maxlength="{{ heading_max_length }}" class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40">
+        </div>
+        <div>
+          <label for="section-edit-cards" class="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Cards per row</label>
+          <select id="section-edit-cards" class="w-full px-3.5 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 cursor-pointer">
+            {% for n in cards_per_row_choices %}
+            <option value="{{ n }}">{{ n }}</option>
+            {% endfor %}
+          </select>
+          <p id="section-edit-cards-note" class="hidden text-[12.5px] text-gray-500 dark:text-gray-400 mt-2">Featured Research keeps its existing hero and sidebar layout. This value is saved for the section but does not convert it into the normal card grid.</p>
+        </div>
+        <div class="flex items-center justify-between gap-4 pt-1">
+          <div>
+            <div class="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</div>
+            <p class="text-[12.5px] text-gray-500 dark:text-gray-400 mt-0.5">Show this section on the Home page</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span id="section-edit-status-label" class="text-[11px] font-bold tracking-wider text-green-700 dark:text-green-400">ON</span>
+            <span class="home-toggle">
+              <input type="checkbox" id="section-edit-enabled" aria-label="Section status">
+              <span class="home-toggle-track" aria-hidden="true"></span>
+              <span class="home-toggle-thumb" aria-hidden="true"></span>
+            </span>
+          </div>
+        </div>
+        <p id="section-edit-help" class="sr-only"></p>
+      </div>
+      <div class="p-4 bg-gray-50 dark:bg-gray-900/40 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-end gap-3">
+        <button type="button" id="section-edit-cancel" class="px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-700 cursor-pointer">Cancel</button>
+        <button type="button" id="section-edit-save" class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl px-5 py-2 text-sm font-semibold shadow-xs cursor-pointer">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          Save changes
+        </button>
+      </div>
+    </div>
+  </div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -113,18 +175,17 @@
   const form = document.getElementById('home-page-settings-form');
   const statusEl = document.getElementById('settings-save-status');
   const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
-  form.addEventListener('submit', (event) => event.preventDefault());
+  const modal = document.getElementById('section-edit-modal');
+  const nameInput = document.getElementById('section-edit-name');
+  const cardsSelect = document.getElementById('section-edit-cards');
+  const enabledInput = document.getElementById('section-edit-enabled');
+  const statusLabel = document.getElementById('section-edit-status-label');
+  const helpEl = document.getElementById('section-edit-help');
+  const cardsNote = document.getElementById('section-edit-cards-note');
+  const saveBtn = document.getElementById('section-edit-save');
+  let activeRow = null;
 
-  function setToggleLabel(input) {
-    const label = input.closest('.flex.items-center')?.querySelector('[data-toggle-label]');
-    if (!label) return;
-    const on = input.checked;
-    label.textContent = on ? 'ON' : 'OFF';
-    label.classList.toggle('text-green-700', on);
-    label.classList.toggle('dark:text-green-400', on);
-    label.classList.toggle('text-gray-400', !on);
-    label.classList.toggle('dark:text-gray-500', !on);
-  }
+  form.addEventListener('submit', (event) => event.preventDefault());
 
   function setStatus(text, kind) {
     statusEl.textContent = text;
@@ -135,38 +196,103 @@
     );
   }
 
-  document.querySelectorAll('.home-toggle input').forEach((input) => {
-    input.addEventListener('change', async () => {
-      setToggleLabel(input);
-      const previous = !input.checked;
-      input.disabled = true;
-      setStatus('Saving…', 'pending');
-      try {
-        const body = new URLSearchParams({
-          csrfmiddlewaretoken: csrfToken,
-          field: input.name,
-          value: input.checked ? 'on' : 'off',
-        });
-        const response = await fetch(form.action || window.location.href, {
-          method: 'POST',
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body,
-        });
-        if (!response.ok) throw new Error('Save failed');
-        const data = await response.json();
-        if (!data.ok) throw new Error('Save failed');
-        setStatus('Saved', 'saved');
-      } catch (err) {
-        input.checked = previous;
-        setToggleLabel(input);
-        setStatus('Could not save. Try again.', 'error');
-      } finally {
-        input.disabled = false;
-      }
-    });
+  function setModalStatusLabel(on) {
+    statusLabel.textContent = on ? 'ON' : 'OFF';
+    statusLabel.classList.toggle('text-green-700', on);
+    statusLabel.classList.toggle('dark:text-green-400', on);
+    statusLabel.classList.toggle('text-gray-400', !on);
+    statusLabel.classList.toggle('dark:text-gray-500', !on);
+  }
+
+  function setRowStatus(row, on) {
+    const label = row.querySelector('[data-toggle-label]');
+    label.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-current"></span>' + (on ? 'Active' : 'Inactive');
+    label.className = 'inline-flex items-center gap-1.5 text-[11.5px] font-bold ' + (
+      on ? 'text-green-700 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'
+    );
+    row.dataset.on = on ? '1' : '0';
+  }
+
+  function openModal(row) {
+    activeRow = row;
+    const title = row.querySelector('[data-title-display]').textContent.trim();
+    document.getElementById('section-edit-title').textContent = 'Edit ' + (row.dataset.defaultLabel || 'section');
+    helpEl.textContent = row.querySelector('[data-section-help]').textContent.trim();
+    nameInput.value = title;
+    cardsSelect.value = row.dataset.cardsPerRow || '2';
+    enabledInput.checked = row.dataset.on === '1';
+    setModalStatusLabel(enabledInput.checked);
+    cardsNote.classList.toggle('hidden', row.dataset.usesCardGrid !== '0');
+    modal.classList.remove('hidden');
+    nameInput.focus();
+    nameInput.select();
+  }
+
+  function closeModal() {
+    modal.classList.add('hidden');
+    activeRow = null;
+  }
+
+  enabledInput.addEventListener('change', () => setModalStatusLabel(enabledInput.checked));
+
+  form.addEventListener('click', (event) => {
+    const editBtn = event.target.closest('[data-edit-section]');
+    if (!editBtn || !form.contains(editBtn)) return;
+    event.preventDefault();
+    openModal(editBtn.closest('[data-section-row]'));
+  });
+
+  document.getElementById('section-edit-close').addEventListener('click', closeModal);
+  document.getElementById('section-edit-cancel').addEventListener('click', closeModal);
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) closeModal();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+      event.preventDefault();
+      closeModal();
+    }
+  });
+
+  saveBtn.addEventListener('click', async () => {
+    if (!activeRow) return;
+    const row = activeRow;
+    saveBtn.disabled = true;
+    setStatus('Saving…', 'pending');
+    try {
+      const body = new URLSearchParams({
+        csrfmiddlewaretoken: csrfToken,
+        action: 'save_section',
+        field: row.dataset.field,
+        title: nameInput.value.trim(),
+        cards_per_row: cardsSelect.value,
+        enabled: enabledInput.checked ? 'on' : 'off',
+      });
+      const response = await fetch(form.action || window.location.href, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body,
+      });
+      if (!response.ok) throw new Error('Save failed');
+      const data = await response.json();
+      if (!data.ok) throw new Error('Save failed');
+      const label = data.label || row.dataset.defaultLabel;
+      const cards = String(data.cards_per_row || cardsSelect.value);
+      const on = !!data.on;
+      row.querySelector('[data-title-display]').textContent = label;
+      row.querySelector('[data-cards-display]').textContent = cards + ' per row';
+      row.dataset.cardsPerRow = cards;
+      setRowStatus(row, on);
+      setStatus('Saved', 'saved');
+      closeModal();
+    } catch (err) {
+      setStatus('Could not save. Try again.', 'error');
+    } finally {
+      saveBtn.disabled = false;
+    }
   });
 </script>
 {% endblock %}

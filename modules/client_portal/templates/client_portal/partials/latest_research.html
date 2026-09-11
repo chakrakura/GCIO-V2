@@ -7,9 +7,9 @@
 </div>
 {% endif %}
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+<div class="home-cards-grid" style="--home-cards-per-row: {{ cards_per_row|default:2 }};">
   {% for report in reports %}
-  <a href="{% if is_home_preview %}{% url 'report_edit' report.id %}{% else %}{% url 'client_report_detail' report.id %}{% endif %}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
+  <a href="{% if is_home_preview %}{% url 'client_home_preview_report' report.id %}{% else %}{% url 'client_report_detail' report.id %}{% endif %}" class="block bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5">
     <div class="flex items-center justify-between mb-2">
       <span class="inline-flex items-center gap-1.5 text-[10.5px] font-bold text-gray-400 dark:text-gray-500 tracking-wider">
         <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
@@ -41,7 +41,7 @@
     </div>
   </a>
   {% empty %}
-  <div class="md:col-span-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400 dark:text-gray-500">
+  <div class="home-cards-empty bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-8 text-center text-gray-400 dark:text-gray-500">
     No research matches this filter.
   </div>
   {% endfor %}

@@ -319,11 +319,12 @@ def assemble_home_context(request, reports_qs, home_url_name='client_home', is_h
             reports_qs=reports_qs, home_url_name=home_url_name, is_home_preview=is_home_preview,
         )
         ctx.update({
-            'title': title,
+            'title': home_page_settings.heading_for_toggle(field),
             'slug': slug,
             'container_id': container_id,
             'preview_list_url': preview_list_urls.get(slug, fallback_list_url),
             'client_list_url': reverse('client_publication_series', args=[slug]),
+            'cards_per_row': home_page_settings.cards_per_row_for_toggle(field),
         })
         notes_ctx_by_section[section] = ctx
         if getattr(home_page_settings, field):
@@ -826,36 +827,60 @@ def client_toggle_save(request, report_id):
     return JsonResponse({'saved': created})
 
 
-@login_required
-def client_report_detail(request, report_id):
-    if not _is_client_role(request.user):
-        return redirect('dashboard')
+def _report_reader_file(report):
+    """File shown in the reader: article attachment for text, content file otherwise."""
+    if report.content_type == Report.CONTENT_TEXT:
+        if report.article_attachment:
+            return report.article_attachment
+        return None
+    return report.file_upload or None
 
-    report = get_object_or_404(_client_reports(request.user), pk=report_id)
 
-    file_name = report.file_upload.name.lower() if report.file_upload else ''
+def _report_reader_context(report, *, saved_report_ids=None, is_home_preview=False):
+    """Shared article / PDF / presentation payload for the client reader and Home preview."""
+    source_file = _report_reader_file(report)
+    file_name = source_file.name.lower() if source_file else ''
     is_native_pdf = file_name.endswith('.pdf')
     is_pptx = file_name.endswith('.pptx') or file_name.endswith('.ppt')
 
     preview_pdf_url = None
     preview_page_count = None
     if is_native_pdf:
-        preview_pdf_url = report.file_upload.url
-        preview_page_count = _pdf_page_count(report.file_upload.path)
-    elif is_pptx:
+        preview_pdf_url = source_file.url
+        preview_page_count = _pdf_page_count(source_file.path)
+    elif is_pptx and report.file_upload:
         pdf_path = _pptx_preview_pdf_path(report)
         if pdf_path:
             preview_pdf_url = settings.MEDIA_URL + f'reports/converted/{pdf_path.name}'
             preview_page_count = _pdf_page_count(pdf_path)
 
-    return render(request, 'client_portal/report_detail.html', {
+    return {
         'report': report,
         'preview_pdf_url': preview_pdf_url,
         'preview_page_count': preview_page_count,
         'preview_label': 'Presentation' if is_pptx else 'PDF',
         'is_pptx_file': is_pptx and not preview_pdf_url,
-        'saved_report_ids': _saved_report_ids(request.user),
-    })
+        'reader_file': source_file,
+        'attached_file_name': Path(source_file.name).name if source_file else '',
+        'saved_report_ids': set() if saved_report_ids is None else saved_report_ids,
+        'is_home_preview': is_home_preview,
+        'base_template': (
+            'console/base.html' if is_home_preview else 'client_portal/base_client.html'
+        ),
+    }
+
+
+@login_required
+def client_report_detail(request, report_id):
+    if not _is_client_role(request.user):
+        return redirect('dashboard')
+
+    report = get_object_or_404(_client_reports(request.user), pk=report_id)
+    return render(
+        request,
+        'client_portal/report_detail.html',
+        _report_reader_context(report, saved_report_ids=_saved_report_ids(request.user)),
+    )
 
 
 @login_required

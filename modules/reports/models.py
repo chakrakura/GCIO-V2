@@ -34,6 +34,12 @@ class Report(models.Model):
     description = models.TextField(blank=True)
     body = models.TextField(blank=True)
     file_upload = models.FileField(upload_to='reports/uploads/', blank=True, null=True)
+    article_attachment = models.FileField(
+        upload_to='reports/attachments/',
+        blank=True,
+        null=True,
+        help_text='Optional PDF attached to a text article. Separate from Upload PDF / Presentation files.',
+    )
 
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_DRAFT)
     access_level = models.CharField(max_length=10, choices=ACCESS_CHOICES, default=ACCESS_ALL)

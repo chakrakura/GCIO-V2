@@ -1,4 +1,6 @@
+import re
 import subprocess
+from collections import Counter
 from datetime import timedelta
 from pathlib import Path
 
@@ -19,7 +21,9 @@ from pypdf.errors import PdfReadError
 from modules.home_page_settings.models import HomePageSettings, TOP_NOTES_DEFAULT
 from modules.market_data.models import MarketInstrument
 from modules.reports.models import Report, SavedReport
-from modules.taxonomy.models import AssetClass, CountryRegion, PublicationType
+from modules.taxonomy.models import AssetClass, CountryRegion, PublicationType, ReportTag
+
+from .content_tags import extract_tagged_passages
 
 DATE_RANGE_OPTIONS = [
     ('7d', 'Last 7 days'),
@@ -127,10 +131,14 @@ def _dot_color(publication_type):
 
 def _client_reports(user):
     """Published reports visible to this user's organisation(s)."""
-    org_ids = list(user.profile.organizations.values_list('id', flat=True))
-    return Report.objects.filter(status=Report.STATUS_PUBLISHED).filter(
-        Q(access_level=Report.ACCESS_ALL) | Q(visible_organizations__id__in=org_ids)
-    ).distinct().select_related('author', 'publication_type').order_by('-published_at')
+    orgs = user.profile.organizations.all()
+    org_ids = list(orgs.values_list('id', flat=True))
+    # GCIO (all-users) articles are shown unless every one of the user's organisations has opted out.
+    show_gcio = not org_ids or orgs.filter(show_gcio_articles=True).exists()
+    visible = Q(visible_organizations__id__in=org_ids)
+    if show_gcio:
+        visible |= Q(access_level=Report.ACCESS_ALL)
+    return Report.objects.filter(status=Report.STATUS_PUBLISHED).filter(visible).distinct().select_related('author', 'publication_type').order_by('-published_at')
 
 
 CLIENT_VISIBILITY_WINDOW = timedelta(days=365)
@@ -805,6 +813,117 @@ def client_saved_reports(request):
     }
     context.update(_report_filter_facets(visible_report_ids))
     return render(request, 'client_portal/saved_reports.html', context)
+
+
+INSIGHTS_PAGE_SIZE = 20
+
+
+def _hashtag(name):
+    """'Fiscal & sovereign credit' -> '#FiscalSovereignCredit' (keeps existing capitals, e.g. 'AI')."""
+    words = re.findall(r'[A-Za-z0-9]+', name)
+    return '#' + ''.join(word[:1].upper() + word[1:] for word in words)
+
+
+INSIGHTS_VIEWS = [('latest', 'Latest'), ('saved', 'Saved')]
+
+
+@login_required
+def client_tagged_insights(request):
+    """Passages editors tagged inline in article blocks ("takes"), browsable by hashtag
+    and grouped by month. Tabs: Latest (all), Saved (takes from reports the user saved)."""
+    if not _is_client_role(request.user):
+        return redirect('dashboard')
+
+    reports = list(_client_reports_current(request.user).filter(
+        content_type=Report.CONTENT_TEXT, body__contains='content-tag',
+    ).prefetch_related('tags'))
+    passages = []
+    for report in reports:
+        for passage in extract_tagged_passages(report.body):
+            passage['report'] = report
+            passages.append(passage)
+
+    # Use the live tag names, and drop passages whose tag was deleted or deactivated.
+    active_tags = {
+        tag.id: tag for tag in ReportTag.objects.filter(id__in={p['tag_id'] for p in passages}, is_active=True)
+    }
+    passages = [p for p in passages if p['tag_id'] in active_tags]
+    for tag in active_tags.values():
+        tag.hashtag = _hashtag(tag.name)
+
+    tag_counts = Counter(p['tag_id'] for p in passages)
+    trending = sorted(active_tags.values(), key=lambda tag: (-tag_counts[tag.id], tag.name.lower()))
+    for tag in trending:
+        tag.passage_count = tag_counts[tag.id]
+
+    selected_tag = None
+    selected_value = request.GET.get('tag', '')
+    if selected_value.isdigit():
+        selected_tag = active_tags.get(int(selected_value))
+    if selected_tag:
+        passages = [p for p in passages if p['tag_id'] == selected_tag.id]
+        dates = [p['report'].published_at for p in passages if p['report'].published_at]
+        selected_tag.passage_count = len(passages)
+        selected_tag.report_count = len({p['report'].id for p in passages})
+        selected_tag.first_date = min(dates) if dates else None
+        selected_tag.last_date = max(dates) if dates else None
+
+    saved_ids = _saved_report_ids(request.user)
+    active_view = request.GET.get('view', 'latest')
+    if active_view not in dict(INSIGHTS_VIEWS):
+        active_view = 'latest'
+    if active_view == 'saved':
+        passages = [p for p in passages if p['report'].id in saved_ids]
+
+    passages.sort(key=lambda p: p['report'].published_at or p['report'].created_at, reverse=True)
+    paginator = Paginator(passages, INSIGHTS_PAGE_SIZE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    month_groups = []
+    for passage in page_obj:
+        report = passage['report']
+        passage['tag'] = active_tags[passage['tag_id']]
+        # The take's own hashtag first, then the report's other active content tags.
+        other_tags = [
+            tag for tag in report.tags.all()
+            if tag.is_active and tag.id != passage['tag_id']
+        ]
+        for tag in other_tags:
+            tag.hashtag = _hashtag(tag.name)
+        passage['hashtags'] = [passage['tag']] + other_tags
+        passage['is_key_call'] = report.is_featured and passage['kind'] != 'quote'
+        report.dot_color = _dot_color(report.publication_type)
+        report.label_color = report.dot_color.replace('bg-', 'text-').replace('-500', '-600').replace('-400', '-500')
+        month = (report.published_at or report.created_at).date().replace(day=1)
+        if not month_groups or month_groups[-1]['month'] != month:
+            month_groups.append({'month': month, 'passages': []})
+        month_groups[-1]['passages'].append(passage)
+
+    base_params = request.GET.copy()
+    base_params.pop('page', None)
+    view_tabs = []
+    for value, label in INSIGHTS_VIEWS:
+        params = base_params.copy()
+        params.pop('view', None)
+        if value != 'latest':
+            params['view'] = value
+        view_tabs.append({'value': value, 'label': label, 'url': '?' + params.urlencode()})
+    tag_params = base_params.copy()
+    tag_params.pop('tag', None)
+
+    return render(request, 'client_portal/tagged_insights.html', {
+        'active_nav': 'insights',
+        'page_obj': page_obj,
+        'month_groups': month_groups,
+        'passage_count': paginator.count,
+        'trending_tags': trending,
+        'selected_tag': selected_tag,
+        'view_tabs': view_tabs,
+        'active_view': active_view,
+        'tag_link_base': tag_params.urlencode(),
+        'saved_report_ids': saved_ids,
+        'querystring': base_params.urlencode(),
+    })
 
 
 @login_required

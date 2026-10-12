@@ -8,6 +8,7 @@ urlpatterns = [
     path('publications/', views.client_publications, name='client_publications'),
     path('exclusive-reports/', views.client_exclusive_reports, name='client_exclusive_reports'),
     path('publications/<slug:slug>/', views.client_publication_series, name='client_publication_series'),
+    path('insights/', views.client_tagged_insights, name='client_tagged_insights'),
     path('saved/', views.client_saved_reports, name='client_saved_reports'),
     path('help/', views.client_help_support, name='client_help_support'),
     path('archive/', views.client_archive, name='client_archive'),

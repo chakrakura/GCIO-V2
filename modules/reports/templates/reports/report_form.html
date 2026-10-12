@@ -27,6 +27,28 @@
   .block-content { outline: none; font-family: 'Inter', system-ui, sans-serif; font-size: 15px; line-height: 1.7; color: #111827; margin: 0; }
   .dark .block-content { color: #f3f4f6; }
   .block-content:empty::before { content: attr(data-placeholder); color: #9ca3af; }
+  /* Inline content tags: a passage of an article block tagged with a ReportTag. */
+  .block-content .content-tag { background: #eff6ff; border-radius: 3px; padding: 0 1px; position: relative; }
+  .dark .block-content .content-tag { background: rgba(30,58,138,0.3); }
+  .block-content .content-tag:hover::after { content: '#' attr(data-tag-name); position: absolute; left: 0; bottom: calc(100% + 4px); white-space: nowrap; font: 600 11px/1 'Inter', system-ui, sans-serif; color: #fff; background: #1e3a8a; padding: 4px 7px; border-radius: 6px; pointer-events: none; z-index: 30; }
+  .tag-toolbar { position: fixed; z-index: 60; display: none; align-items: center; gap: 4px; padding: 4px; border-radius: 10px; background: #111827; box-shadow: 0 6px 20px rgba(0,0,0,0.18); }
+  .tag-toolbar.is-open { display: flex; }
+  .tag-toolbar button { display: inline-flex; align-items: center; gap: 5px; font: 600 12px/1 'Inter', system-ui, sans-serif; color: #fff; padding: 6px 9px; border-radius: 7px; cursor: pointer; }
+  .tag-toolbar button:hover { background: rgba(255,255,255,0.12); }
+  .tag-popover { position: fixed; z-index: 61; display: none; width: 260px; padding: 8px; border-radius: 12px; background: #fff; border: 1px solid #e5e7eb; box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+  .dark .tag-popover { background: #1f2937; border-color: #374151; }
+  .tag-popover.is-open { display: block; }
+  .tag-popover input { width: 100%; padding: 7px 10px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; color: #111827; background: #f9fafb; outline: none; }
+  .dark .tag-popover input { border-color: #374151; background: #111827; color: #f3f4f6; }
+  .tag-popover input:focus { border-color: #2563eb; }
+  .tag-popover-list { max-height: 220px; overflow-y: auto; margin-top: 6px; }
+  .tag-popover-list button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 8px; text-align: left; font-size: 13px; color: #374151; padding: 7px 9px; border-radius: 7px; cursor: pointer; }
+  .dark .tag-popover-list button { color: #d1d5db; }
+  .tag-popover-list button:hover, .tag-popover-list button.is-active { background: #eff6ff; color: #1e3a8a; }
+  .dark .tag-popover-list button:hover, .dark .tag-popover-list button.is-active { background: rgba(30,58,138,0.35); color: #bfdbfe; }
+  .tag-popover-list .tag-popover-meta { font-size: 11px; color: #9ca3af; }
+  .tag-popover-empty { font-size: 12px; color: #9ca3af; padding: 8px 9px; }
+  .tag-popover-error { font-size: 12px; color: #b91c1c; padding: 4px 9px 0; }
   .block-heading.block-content { font-family: 'Source Serif 4', Charter, Georgia, serif; font-weight: 700; font-size: 22px; color: #1e3a8a; margin: 0; padding: 0; }
   .dark .block-heading.block-content { color: #93c5fd; }
   .editor-block:has(.block-heading) { padding-top: 8px; padding-bottom: 0; }
@@ -433,7 +455,7 @@
                 <label class="text-[10.5px] tracking-wider font-bold text-gray-500 dark:text-gray-400">CONTENT TAGS</label>
                 <span class="classification-count text-[10.5px] text-gray-400 dark:text-gray-500" data-count-for="tags">none</span>
               </div>
-              <div class="flex flex-wrap gap-2">
+              <div id="content-tag-pills" class="flex flex-wrap gap-2">
                 {% for opt in tag_options %}
                 <label class="classification-pill pill-option inline-flex items-center px-3 py-1.5 rounded-full border text-xs font-semibold border-gray-200 dark:border-gray-700 has-[:checked]:border-blue-300 dark:has-[:checked]:border-blue-700 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/30 has-[:checked]:text-blue-800 dark:has-[:checked]:text-blue-300 text-gray-700 dark:text-gray-300 cursor-pointer transition-colors" data-tag-name="{{ opt.name|lower }}">
                   <input type="checkbox" name="tags" value="{{ opt.id }}" class="classification-checkbox" data-group="tags" {% if opt.id in selected_tags %}checked{% endif %}>
@@ -1914,6 +1936,252 @@
       alert('Could not reach the server. Please try again.');
     }
   });
+
+  // --- Inline content tagging ---
+  // Select text inside a block → "Tag" button → pick an existing content tag or create
+  // a new one. The passage is wrapped in <span class="content-tag" data-tag-id data-tag-name>
+  // (kept in report.body) and the tag is also ticked under Classification → Content Tags.
+  const tagToolbar = document.createElement('div');
+  tagToolbar.className = 'tag-toolbar';
+  document.body.appendChild(tagToolbar);
+
+  const tagPopover = document.createElement('div');
+  tagPopover.className = 'tag-popover';
+  tagPopover.innerHTML = '<input type="text" placeholder="Search or create a tag…" autocomplete="off"><div class="tag-popover-error hidden"></div><div class="tag-popover-list"></div>';
+  document.body.appendChild(tagPopover);
+  const tagSearchInput = tagPopover.querySelector('input');
+  const tagList = tagPopover.querySelector('.tag-popover-list');
+  const tagError = tagPopover.querySelector('.tag-popover-error');
+  const contentTagPills = document.getElementById('content-tag-pills');
+
+  let savedTagRange = null;
+  let tagActiveIndex = 0;
+
+  function contentTagOptions() {
+    return Array.from(document.querySelectorAll('input.classification-checkbox[data-group="tags"]')).map((cb) => ({
+      id: cb.value,
+      name: cb.closest('label').textContent.trim(),
+      checkbox: cb,
+    }));
+  }
+
+  function editableFor(node) {
+    const el = node && (node.nodeType === 1 ? node : node.parentElement);
+    const editable = el && el.closest('.block-content[contenteditable="true"]');
+    return editable && blockEditor.contains(editable) ? editable : null;
+  }
+
+  function hideTagToolbar() { tagToolbar.classList.remove('is-open'); }
+  function hideTagPopover() { tagPopover.classList.remove('is-open'); savedTagRange = null; }
+
+  function placeFixed(el, rect, below) {
+    el.style.visibility = 'hidden';
+    el.classList.add('is-open');
+    const w = el.offsetWidth, h = el.offsetHeight;
+    let top = below ? rect.bottom + 8 : rect.top - h - 8;
+    if (top < 8) top = rect.bottom + 8;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, rect.top - h - 8);
+    const left = Math.min(Math.max(8, rect.left + rect.width / 2 - w / 2), window.innerWidth - w - 8);
+    el.style.top = `${top}px`;
+    el.style.left = `${left}px`;
+    el.style.visibility = '';
+  }
+
+  function toolbarButton(html, onClick) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.innerHTML = html;
+    btn.addEventListener('mousedown', (e) => e.preventDefault()); // keep the text selection
+    btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); onClick(); });
+    return btn;
+  }
+
+  const TAG_ICON = '<svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>';
+
+  function updateTagToolbar() {
+    if (tagPopover.classList.contains('is-open')) return;
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return hideTagToolbar();
+    const range = sel.getRangeAt(0);
+    const editable = editableFor(range.commonAncestorContainer);
+    if (!editable) return hideTagToolbar();
+
+    tagToolbar.innerHTML = '';
+    if (!range.collapsed && range.toString().trim()) {
+      tagToolbar.appendChild(toolbarButton(`${TAG_ICON}Tag`, () => openTagPopover(range.cloneRange())));
+      placeFixed(tagToolbar, range.getBoundingClientRect(), false);
+      return;
+    }
+    // Caret inside an existing tagged passage → offer to remove that tag.
+    const anchorEl = range.startContainer.nodeType === 1 ? range.startContainer : range.startContainer.parentElement;
+    const tagged = anchorEl && anchorEl.closest('.content-tag');
+    if (tagged && editable.contains(tagged)) {
+      const label = document.createElement('span');
+      label.style.cssText = 'color:#bfdbfe;font:600 12px/1 Inter,system-ui,sans-serif;padding:0 6px;';
+      label.textContent = `#${tagged.dataset.tagName || 'tag'}`;
+      tagToolbar.appendChild(label);
+      tagToolbar.appendChild(toolbarButton('Remove tag', () => removeContentTag(tagged)));
+      placeFixed(tagToolbar, tagged.getBoundingClientRect(), false);
+      return;
+    }
+    hideTagToolbar();
+  }
+
+  function openTagPopover(range) {
+    savedTagRange = range;
+    hideTagToolbar();
+    tagSearchInput.value = '';
+    tagError.classList.add('hidden');
+    renderTagList();
+    placeFixed(tagPopover, range.getBoundingClientRect(), true);
+    tagSearchInput.focus();
+  }
+
+  function tagListItems() {
+    const q = tagSearchInput.value.trim();
+    const ql = q.toLowerCase();
+    const items = contentTagOptions().filter((t) => !ql || t.name.toLowerCase().includes(ql));
+    const exact = contentTagOptions().some((t) => t.name.toLowerCase() === ql);
+    const result = items.map((t) => ({ kind: 'existing', tag: t }));
+    if (q && !exact) result.push({ kind: 'create', name: q });
+    return result;
+  }
+
+  function renderTagList() {
+    const items = tagListItems();
+    tagActiveIndex = Math.min(tagActiveIndex, Math.max(0, items.length - 1));
+    tagList.innerHTML = '';
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'tag-popover-empty';
+      empty.textContent = 'Type a name to create the first tag.';
+      tagList.appendChild(empty);
+      return;
+    }
+    items.forEach((item, i) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      if (i === tagActiveIndex) btn.classList.add('is-active');
+      const name = document.createElement('span');
+      const meta = document.createElement('span');
+      meta.className = 'tag-popover-meta';
+      if (item.kind === 'create') {
+        name.textContent = `Create “${item.name}”`;
+        meta.textContent = 'new';
+      } else {
+        name.textContent = item.tag.name;
+        meta.textContent = item.tag.checkbox.checked ? 'on report' : '';
+      }
+      btn.appendChild(name);
+      btn.appendChild(meta);
+      btn.addEventListener('mousedown', (e) => e.preventDefault());
+      btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); chooseTagItem(item); });
+      tagList.appendChild(btn);
+    });
+  }
+
+  tagSearchInput.addEventListener('input', () => { tagActiveIndex = 0; renderTagList(); });
+  tagSearchInput.addEventListener('keydown', (e) => {
+    const items = tagListItems();
+    if (e.key === 'ArrowDown') { e.preventDefault(); tagActiveIndex = Math.min(tagActiveIndex + 1, items.length - 1); renderTagList(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); tagActiveIndex = Math.max(tagActiveIndex - 1, 0); renderTagList(); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (items[tagActiveIndex]) chooseTagItem(items[tagActiveIndex]); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); hideTagPopover(); }
+  });
+
+  function addContentTagPill(tag) {
+    const label = document.createElement('label');
+    label.className = 'classification-pill pill-option inline-flex items-center px-3 py-1.5 rounded-full border text-xs font-semibold border-gray-200 dark:border-gray-700 has-[:checked]:border-blue-300 dark:has-[:checked]:border-blue-700 has-[:checked]:bg-blue-50 dark:has-[:checked]:bg-blue-900/30 has-[:checked]:text-blue-800 dark:has-[:checked]:text-blue-300 text-gray-700 dark:text-gray-300 cursor-pointer transition-colors';
+    label.dataset.tagName = tag.name.toLowerCase();
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.name = 'tags';
+    cb.value = String(tag.id);
+    cb.className = 'classification-checkbox';
+    cb.dataset.group = 'tags';
+    cb.addEventListener('change', updateClassificationCounts);
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(tag.name));
+    contentTagPills.appendChild(label);
+    return cb;
+  }
+
+  async function chooseTagItem(item) {
+    let tag = item.tag;
+    if (item.kind === 'create') {
+      try {
+        const formData = new FormData();
+        formData.append('name', item.name);
+        const response = await fetch("{% url 'report_tag_create' %}", {
+          method: 'POST',
+          headers: { 'X-CSRFToken': csrfToken },
+          body: formData,
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          tagError.textContent = data.error || 'Could not create the tag.';
+          tagError.classList.remove('hidden');
+          return;
+        }
+        const existing = contentTagOptions().find((t) => t.id === String(data.id));
+        tag = existing || { id: String(data.id), name: data.name, checkbox: addContentTagPill(data) };
+      } catch (err) {
+        tagError.textContent = 'Could not reach the server. Please try again.';
+        tagError.classList.remove('hidden');
+        return;
+      }
+    }
+    applyContentTag(tag);
+  }
+
+  function applyContentTag(tag) {
+    const range = savedTagRange;
+    hideTagPopover();
+    if (!range) return;
+    const editable = editableFor(range.commonAncestorContainer);
+    if (!editable) return;
+
+    const span = document.createElement('span');
+    span.className = 'content-tag';
+    span.dataset.tagId = tag.id;
+    span.dataset.tagName = tag.name;
+    span.appendChild(range.extractContents());
+    // Re-tagging a passage replaces any tag spans that were inside the selection.
+    span.querySelectorAll('.content-tag').forEach((inner) => inner.replaceWith(...inner.childNodes));
+    range.insertNode(span);
+    editable.dispatchEvent(new Event('input', { bubbles: true }));
+
+    if (!tag.checkbox.checked) {
+      tag.checkbox.checked = true;
+      tag.checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    updateChecklist();
+
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    const after = document.createRange();
+    after.setStartAfter(span);
+    after.collapse(true);
+    sel.addRange(after);
+    editable.focus();
+  }
+
+  function removeContentTag(span) {
+    const editable = editableFor(span);
+    span.replaceWith(...span.childNodes);
+    hideTagToolbar();
+    if (editable) editable.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  document.addEventListener('selectionchange', () => requestAnimationFrame(updateTagToolbar));
+  document.addEventListener('mousedown', (e) => {
+    if (tagPopover.classList.contains('is-open') && !tagPopover.contains(e.target)) hideTagPopover();
+  });
+  window.addEventListener('scroll', (e) => {
+    if (tagPopover.contains(e.target)) return; // scrolling the tag list itself
+    hideTagToolbar();
+    hideTagPopover();
+  }, true);
 
   renderBlocks();
 </script>

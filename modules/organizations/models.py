@@ -12,6 +12,14 @@ class Organization(models.Model):
         'taxonomy.CountryRegion', on_delete=models.SET_NULL, blank=True, null=True, related_name='organizations',
     )
     is_active = models.BooleanField(default=True)
+    show_gcio_articles = models.BooleanField(
+        default=True,
+        help_text='Show GCIO articles published to all users. When off, members only see articles assigned to this organisation.',
+    )
+    custom_domain_enabled = models.BooleanField(
+        default=False,
+        help_text='Serve the portal on this organisation\'s own domain. Placeholder: not wired up yet.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

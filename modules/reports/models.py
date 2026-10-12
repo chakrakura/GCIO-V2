@@ -84,3 +84,4 @@ class SavedReport(models.Model):
 
     def __str__(self):
         return f'{self.user} saved "{self.report}"'
+

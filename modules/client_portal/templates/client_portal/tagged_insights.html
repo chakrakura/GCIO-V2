@@ -1,0 +1,129 @@
+{% extends "client_portal/base_client.html" %}
+
+{% block title %}Tagged Insights{% endblock %}
+
+{% block breadcrumb %}Tagged Insights{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <section class="mb-8">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-bold text-[17px] text-blue-900 dark:text-blue-300">Trending hashtags</h2>
+      {% if selected_tag %}
+      <a href="?{{ tag_link_base }}" class="text-[13.5px] font-semibold text-gray-400 dark:text-gray-500 hover:text-blue-800 dark:hover:text-blue-300">Clear hashtag</a>
+      {% endif %}
+    </div>
+    <div class="flex flex-wrap gap-2.5">
+      {% for tag in trending_tags %}
+      <a href="?{% if selected_tag.id == tag.id %}{{ tag_link_base }}{% else %}{% if tag_link_base %}{{ tag_link_base }}&{% endif %}tag={{ tag.id }}{% endif %}"
+         class="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border text-[15px] font-bold shadow-xs transition-colors {% if selected_tag.id == tag.id %}bg-blue-900 border-blue-900 text-white ring-2 ring-blue-300 dark:ring-blue-700{% else %}bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-blue-900 dark:text-blue-300 hover:border-blue-300 dark:hover:border-blue-700{% endif %}">
+        {{ tag.hashtag }}
+        <span class="text-[12.5px] font-semibold {% if selected_tag.id == tag.id %}text-blue-200{% else %}text-gray-400 dark:text-gray-500{% endif %}">{{ tag.passage_count }}</span>
+      </a>
+      {% empty %}
+      <div class="text-[13.5px] text-gray-400 dark:text-gray-500">No hashtags yet. They'll appear here as analysts tag key points in their research.</div>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% if selected_tag %}
+  <section class="bg-white dark:bg-gray-800 border border-blue-200 dark:border-blue-900/60 rounded-2xl p-6 sm:p-8 mb-8">
+    <div class="text-[12px] font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400 mb-2">Everything we've said on</div>
+    <div class="font-serif font-bold text-4xl sm:text-[42px] leading-tight text-blue-900 dark:text-blue-300 break-words">{{ selected_tag.hashtag }}</div>
+    <p class="mt-3 text-[15.5px] text-gray-600 dark:text-gray-400">
+      {{ selected_tag.passage_count }} take{{ selected_tag.passage_count|pluralize }} from {{ selected_tag.report_count }} report{{ selected_tag.report_count|pluralize }}{% if selected_tag.first_date %}, {% if selected_tag.first_date|date:"Ymd" == selected_tag.last_date|date:"Ymd" %}on {{ selected_tag.first_date|date:"j M Y" }}{% else %}from {{ selected_tag.first_date|date:"j M Y" }} to {{ selected_tag.last_date|date:"j M Y" }}{% endif %}{% endif %}.
+    </p>
+  </section>
+  {% endif %}
+
+  <div class="flex items-end justify-between gap-4 border-b border-gray-200 dark:border-gray-700 mb-8">
+    <nav class="flex gap-6">
+      {% for tab in view_tabs %}
+      <a href="{{ tab.url }}" class="pb-3 -mb-px text-[15px] border-b-2 {% if active_view == tab.value %}border-blue-900 dark:border-blue-300 text-gray-900 dark:text-gray-100 font-semibold{% else %}border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200{% endif %}">{{ tab.label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="pb-3 text-[13px] text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ passage_count }} take{{ passage_count|pluralize }} &middot; newest first</div>
+  </div>
+
+  {% for group in month_groups %}
+  <section class="mb-10">
+    <div class="flex items-center gap-3 mb-5">
+      <span class="w-1 h-6 bg-blue-600 rounded-full"></span>
+      <h3 class="font-serif font-bold text-[19px] text-blue-900 dark:text-blue-300 whitespace-nowrap">{{ group.month|date:"F Y" }}</h3>
+      <span class="flex-1 h-px bg-gray-200 dark:bg-gray-700"></span>
+      <span class="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 whitespace-nowrap">{{ group.passages|length }} take{{ group.passages|length|pluralize }}</span>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
+      {% for passage in group.passages %}
+      {% with report=passage.report %}
+      <article class="rounded-2xl p-5 sm:p-6 flex flex-col {% if passage.is_key_call %}bg-blue-900 dark:bg-blue-950 text-white shadow-md{% else %}bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-xs{% endif %}">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest min-w-0">
+            {% if report.publication_type %}
+            <span class="w-1.5 h-1.5 rounded-full shrink-0 {% if passage.is_key_call %}bg-blue-300{% else %}{{ report.dot_color }}{% endif %}"></span>
+            <span class="truncate {% if passage.is_key_call %}text-blue-100{% else %}{{ report.label_color }}{% endif %}">{{ report.publication_type.name }}</span>
+            <span class="{% if passage.is_key_call %}text-blue-300{% else %}text-gray-400{% endif %}">&middot;</span>
+            {% endif %}
+            <span class="whitespace-nowrap {% if passage.is_key_call %}text-blue-200{% else %}text-gray-500 dark:text-gray-400{% endif %}">{{ report.published_at|date:"j M Y" }}</span>
+          </div>
+          {% include 'client_portal/partials/bookmark_button.html' with report=report extra_class=passage.is_key_call|yesno:"text-blue-200 hover:text-white,text-gray-300 dark:text-gray-600 hover:text-blue-600" %}
+        </div>
+
+        {% if passage.is_key_call %}
+        <div class="text-[11px] font-bold uppercase tracking-widest text-blue-200 mb-2">Key call</div>
+        <p class="font-serif font-semibold text-[18px] leading-relaxed text-white">{{ passage.text }}</p>
+        {% elif passage.kind == 'quote' %}
+        <p class="font-serif italic text-[22px] leading-snug text-blue-900 dark:text-blue-300"><span class="text-blue-400">&ldquo;</span>{{ passage.text }}<span class="text-blue-400">&rdquo;</span></p>
+        {% elif passage.kind == 'heading' %}
+        <p class="font-serif font-bold text-[19px] leading-snug text-blue-900 dark:text-blue-300">{{ passage.text }}</p>
+        {% else %}
+        <p class="font-serif text-[15.5px] leading-[1.75] text-gray-800 dark:text-gray-200">{{ passage.text }}</p>
+        {% endif %}
+
+        <div class="flex flex-wrap gap-1.5 mt-5">
+          {% for tag in passage.hashtags %}
+          <a href="?{% if tag_link_base %}{{ tag_link_base }}&{% endif %}tag={{ tag.id }}" class="px-2 py-1 rounded text-[11.5px] font-bold {% if passage.is_key_call %}{% if forloop.first %}bg-white text-blue-900{% else %}bg-blue-800 text-blue-100 hover:bg-blue-700{% endif %}{% else %}{% if forloop.first %}bg-blue-900 text-white{% else %}bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100{% endif %}{% endif %}">{{ tag.hashtag }}</a>
+          {% endfor %}
+        </div>
+
+        <div class="flex items-end justify-between gap-3 mt-5 pt-4 border-t {% if passage.is_key_call %}border-blue-700{% else %}border-gray-100 dark:border-gray-700{% endif %}">
+          <div class="min-w-0">
+            <div class="text-[10.5px] font-bold uppercase tracking-widest {% if passage.is_key_call %}text-blue-200{% else %}text-gray-500 dark:text-gray-400{% endif %}">From</div>
+            <div class="font-serif font-semibold text-[14px] truncate {% if passage.is_key_call %}text-white{% else %}text-blue-900 dark:text-blue-300{% endif %}">{{ report.title|default:"Untitled report" }}</div>
+          </div>
+          <a href="{% url 'client_report_detail' report.id %}" class="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13px] font-bold {% if passage.is_key_call %}bg-white text-blue-900 hover:bg-blue-50{% else %}bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 text-blue-900 dark:text-blue-300 hover:bg-gray-50 dark:hover:bg-gray-700{% endif %}">
+            Show article
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+      </article>
+      {% endwith %}
+      {% endfor %}
+    </div>
+  </section>
+  {% empty %}
+  <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-10 text-center text-gray-400 dark:text-gray-500">
+    {% if active_view == 'saved' %}
+      No takes from your saved reports{% if selected_tag %} on {{ selected_tag.hashtag }}{% endif %}. Bookmark a take to save its report.
+    {% else %}
+      No tagged takes yet. They'll appear here as analysts tag key points in their research.
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% if page_obj.has_other_pages %}
+  <div class="flex items-center justify-between mt-2 text-[13px]">
+    {% if page_obj.has_previous %}
+    <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}" class="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Previous</a>
+    {% else %}<span></span>{% endif %}
+    <span class="text-gray-500 dark:text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+    <a href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}" class="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">Next</a>
+    {% else %}<span></span>{% endif %}
+  </div>
+  {% endif %}
+{% endblock %}

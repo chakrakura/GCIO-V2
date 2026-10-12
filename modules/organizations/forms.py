@@ -9,13 +9,15 @@ from .models import Organization
 class OrganizationForm(forms.ModelForm):
     class Meta:
         model = Organization
-        fields = ['name', 'logo', 'email', 'phone', 'country', 'is_active']
+        fields = ['name', 'logo', 'email', 'phone', 'country', 'is_active', 'show_gcio_articles', 'custom_domain_enabled']
         widgets = {
             'name': forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'Acme Capital Partners'}),
             'email': forms.EmailInput(attrs={'class': INPUT_CLASS, 'placeholder': 'contact@company.com'}),
             'phone': forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': '+1 555 000 0000'}),
             'country': forms.Select(attrs={'class': 'hidden'}),
             'is_active': forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
+            'show_gcio_articles': forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
+            'custom_domain_enabled': forms.CheckboxInput(attrs={'class': CHECKBOX_CLASS}),
         }
 
     def __init__(self, *args, **kwargs):

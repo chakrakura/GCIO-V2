@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views.decorators.http import require_POST
 
 from gcio.pagination import paginate
@@ -340,3 +341,29 @@ def upload_body_image(request):
     ext = os.path.splitext(image.name)[1].lower() or '.png'
     path = default_storage.save(f'reports/body_images/{uuid.uuid4().hex}{ext}', image)
     return JsonResponse({'url': default_storage.url(path)})
+
+
+@permission_required('can_manage_content')
+@require_POST
+def create_content_tag(request):
+    """Creates (or reuses) a content tag from the article editor's tag picker, so an
+    editor can tag a passage with a tag that doesn't exist yet without leaving the page."""
+    name = ' '.join(request.POST.get('name', '').split())
+    if not name:
+        return JsonResponse({'error': 'Tag name is required.'}, status=400)
+    if len(name) > ReportTag._meta.get_field('name').max_length:
+        return JsonResponse({'error': 'Tag name is too long.'}, status=400)
+    slug = slugify(name)
+    if not slug:
+        return JsonResponse({'error': 'Tag name must contain letters or numbers.'}, status=400)
+
+    tag = ReportTag.objects.filter(Q(name__iexact=name) | Q(slug=slug)).first()
+    created = tag is None
+    if created:
+        tag = ReportTag.objects.create(name=name, slug=slug)
+        log_activity(request, 'created content tag', tag.name)
+    elif not tag.is_active:
+        # Re-activate so the tag is a valid choice on the report form when it's saved.
+        tag.is_active = True
+        tag.save(update_fields=['is_active'])
+    return JsonResponse({'id': tag.id, 'name': tag.name, 'created': created})
